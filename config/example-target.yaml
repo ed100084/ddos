@@ -1,8 +1,8 @@
-# Target: 222.179.105.17 (China Telecom / Chongqing, RTT ~60ms)
+# Target: 203.0.113.17 (China Telecom / Chongqing, RTT ~60ms)
 # Probed 2026-08-28: TCP handshake OK on :80/:8080 but RSTs on payload —
 # no usable web service. UDP is the best fit; HTTP = connection-exhaustion test.
 
-target: 222.179.105.17:9999     # UDP (no handshake needed)
+target: 203.0.113.17:9999     # UDP (no handshake needed)
 attack: udp
 duration_sec: 30
 rate:
@@ -13,7 +13,7 @@ udp:
   fill: "x"
 
 # ── TCP connect variant (stress the firewall's SYN proxy / conn table) ──
-# target: 222.179.105.17:80
+# target: 203.0.113.17:80
 # attack: tcp
 # duration_sec: 30
 # rate: { rps: 5000 }
@@ -22,7 +22,7 @@ udp:
 #   ports: [80, 8080]      # round-robin across the two SYN-accepting ports
 
 # ── HTTP variant (connection-exhaustion, expect high err% from RST) ──
-# target: http://222.179.105.17/
+# target: http://203.0.113.17/
 # attack: http
 # duration_sec: 30
 # rate: { rps: 5000 }

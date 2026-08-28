@@ -11,7 +11,7 @@ class TcpConnectFlood(AttackEngine):
 
     Measures how well the target's SYN proxy / connection table copes. A handshake
     (SYN-ACK) counts as ok even if the peer RSTs right after — that is exactly the
-    firewall behavior we want to stress on 222.179.105.17.
+    firewall behavior we want to stress on 203.0.113.17.
     """
 
     def __init__(self, cfg: Config) -> None:

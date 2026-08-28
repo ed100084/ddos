@@ -11,6 +11,9 @@ dist/
 venv/
 .env
 
+# Local target config (holds the REAL target IP — keep it out of a public repo)
+config/local.yaml
+
 # Tooling
 .pytest_cache/
 .mypy_cache/

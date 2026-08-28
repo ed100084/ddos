@@ -35,7 +35,7 @@ Python 的 **DDoS 模擬器 / Flood Generator** — 用來壓測自家入口(WAF
 
 ### 目標機實測事實(2026-08-28,別重新推論)
 
-Target:`222.179.105.17`(China Telecom / Chongqing,RTT ~60ms)。從 toolap01(`10.6.4.39`)走實體網卡直連,**不經 Tailscale**。
+Target:`203.0.113.17`(placeholder;真 IP 在 gitignored 的 `config/local.yaml`,China Telecom / Chongqing,RTT ~60ms)。從 toolap01(`10.6.4.39`)走實體網卡直連,**不經 Tailscale**。
 
 - 全 port scan:**只有 :80 / :1720(RTP)/ :3128(proxy)/ :8080** 接受 SYN,其餘 RST@SYN
 - 這 4 個 port **idle ~0.1–0.5s 就 RST、零 banner** → 前面是 **stateful firewall / NAT appliance**(疑似 VPN concentrator 邊界),不是真 web service
@@ -49,7 +49,8 @@ Target:`222.179.105.17`(China Telecom / Chongqing,RTT ~60ms)。從 toolap01(`10.
 ddos/
 ├── pyproject.toml          # setuptools, src layout; deps: aiohttp/click/pydantic/PyYAML; dev: pytest
 ├── config/example.yaml     # 本地 dev server 用
-├── config/target-222.yaml  # 真目標(UDP/TCP/HTTP 三變體備註)
+├── config/example-target.yaml  # placeholder target(203.0.113.x TEST-NET,可公開)
+#   config/local.yaml           # ⚠️ 真目標 IP(gitignored,別 commit)
 ├── scripts/dev_server.py   # 本地 target:aiohttp counter + UDP sink
 ├── src/ddos_tool/
 │   ├── cli.py              # click group: run / probe;_ramp_controller 在這裡

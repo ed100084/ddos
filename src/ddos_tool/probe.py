@@ -1,7 +1,7 @@
 """TCP connect scanner — classifies ports as open / closed(RST at SYN) / filtered(timeout).
 
 For open ports it optionally sends one byte to detect the "RST-after-data" pattern
-(firewall/middlebox signature seen on 222.179.105.17:80/8080).
+(firewall/middlebox signature seen on 203.0.113.17:80/8080).
 """
 from __future__ import annotations
 

@@ -62,16 +62,16 @@ ddos run -c /tmp/udp.yaml          # attack: udp, target: host:port
 
 ```bash
 # 升速找 breaking point:500 → 6000 rps,6 級
-ddos run -c config/target-222.yaml --ramp-start 500 --ramp-end 6000 --ramp-steps 6
+ddos run -c config/example-target.yaml --ramp-start 500 --ramp-end 6000 --ramp-steps 6
 ```
 
-> **實測(222.179.105.17)**:瓶頸是**同時連線數**,不是頻寬 — 3000 rps @ 64 workers = 0% err,同 rate @ 300 workers = 85% err。
+> **實測(203.0.113.17)**:瓶頸是**同時連線數**,不是頻寬 — 3000 rps @ 64 workers = 0% err,同 rate @ 300 workers = 85% err。
 
 ### `ddos probe` — port scanner(打之前先掃)
 
 ```bash
 # 全 port TCP connect scan + RST-after-data 偵測
-ddos probe 222.179.105.17 -p 1-65535 -c 2000 -t 1.0
+ddos probe 203.0.113.17 -p 1-65535 -c 2000 -t 1.0
 
 # 指定 port / range
 ddos probe 10.0.0.5 -p 80,443,8000-9000
