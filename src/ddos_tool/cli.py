@@ -18,6 +18,10 @@ def _build_engine(cfg: Config):
         return HttpFlood(cfg)
     if cfg.attack == "udp":
         return UdpFlood(cfg)
+    if cfg.attack == "tcp":
+        from .engine.tcp_flood import TcpConnectFlood
+
+        return TcpConnectFlood(cfg)
     if cfg.attack == "syn":
         from .engine.syn_flood import SynFlood  # lazy: scapy is optional
 

@@ -12,6 +12,15 @@ udp:
   size: 512
   fill: "x"
 
+# ── TCP connect variant (stress the firewall's SYN proxy / conn table) ──
+# target: 222.179.105.17:80
+# attack: tcp
+# duration_sec: 30
+# rate: { rps: 5000 }
+# workers: 64
+# tcp:
+#   ports: [80, 8080]      # round-robin across the two SYN-accepting ports
+
 # ── HTTP variant (connection-exhaustion, expect high err% from RST) ──
 # target: http://222.179.105.17/
 # attack: http
