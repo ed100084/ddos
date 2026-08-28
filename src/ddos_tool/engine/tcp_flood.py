@@ -15,7 +15,7 @@ class TcpConnectFlood(AttackEngine):
     """
 
     def __init__(self, cfg: Config) -> None:
-        super().__init__(cfg.rate.rps, cfg.workers, cfg.duration_sec)
+        super().__init__(cfg.effective_rps(), cfg.workers, cfg.duration_sec)
         payload = cfg.tcp or TcpPayload()
         host, _, port_s = cfg.target.partition(":")
         self.host = host

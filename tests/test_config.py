@@ -47,6 +47,30 @@ def test_tcp_payload_port_range() -> None:
         TcpPayload(ports=[70_000])
 
 
+def test_ramp_rates_linear() -> None:
+    from ddos_tool.config import Ramp
+
+    r = Ramp(start_rps=1000, end_rps=5000, steps=5)
+    assert r.rates() == [1000, 2000, 3000, 4000, 5000]
+
+
+def test_ramp_rates_single_step() -> None:
+    from ddos_tool.config import Ramp
+
+    assert Ramp(start_rps=100, end_rps=900, steps=1).rates() == [900]
+
+
+def test_config_effective_rps() -> None:
+    from ddos_tool.config import Ramp
+
+    flat = Config(target="http://x/", attack="http")
+    assert flat.effective_rps() == 10_000
+    ramped = Config(
+        target="http://x/", attack="http", rate=Rate(rps=999), ramp=Ramp(start_rps=50, end_rps=500)
+    )
+    assert ramped.effective_rps() == 50
+
+
 def test_udp_payload_encoding() -> None:
     p = UdpPayload(size=10, fill="ab")
     assert len(p.encoded()) == 10

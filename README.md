@@ -52,8 +52,17 @@ ddos run -c /tmp/udp.yaml          # attack: udp, target: host:port
 |---|---|
 | `-c, --config` | YAML config(必填)|
 | `-d, --duration` | 覆蓋 `duration_sec` |
-| `--rps` | 覆蓋 `rate.rps` |
+| `--rps` | 覆蓋 `rate.rps`(ramp 時忽略)|
+| `--ramp-start / --ramp-end` | **升速**:起始 → 結束 rps |
+| `--ramp-steps` | 升速級數(預設 5),每級顯示 ops + err% |
 | `-q, --quiet` | 關掉 live pps 顯示 |
+
+```bash
+# 升速找 breaking point:500 → 6000 rps,6 級
+ddos run -c config/target-222.yaml --ramp-start 500 --ramp-end 6000 --ramp-steps 6
+```
+
+> **實測(222.179.105.17)**:瓶頸是**同時連線數**,不是頻寬 — 3000 rps @ 64 workers = 0% err,同 rate @ 300 workers = 85% err。
 
 ### `ddos probe` — port scanner(打之前先掃)
 
