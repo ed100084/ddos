@@ -80,7 +80,7 @@ ddos/
 `syn_flood.py` 目前是 stub(scapy lazy import、fire-and-forget)。
 - [x] `syn` optional extra 已加入；未安裝時只在執行 SYN attack 才報錯
 - [x] 支援 opt-in **source IP spoofing**（`syn: { spoof_src: "10.0.0.0/8" | random }`）；需 root + `rp_filter=2`
-- [x] stats 已區分 `sent` 與 `acked`；目前 MVP 不 sniff，因此 `acked` 明確為 0，發送錯誤計入 `err`
+- [x] stats 已區分 `sent` 與 `acked`；非 spoof 模式用 Scapy `sr()` 統計 SYN-ACK，spoof 模式維持 `acked=0`
 - **AC**:`ddos run -c cfg.yaml --rps 2000`(attack: syn)對 dev_server 跑 10s,sent ≈ 20k ±15%;`pytest` 全綠(scapy 沒裝時 `test_syn_flood.py` 要 skip,不能 fail)
 
 ### R2 (P0)— Auto breaking-point(`--find-limit`) ✅
