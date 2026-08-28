@@ -33,3 +33,12 @@ def test_probe_rejects_invalid_port() -> None:
     result = CliRunner().invoke(main, ["probe", "127.0.0.1", "--ports", "0"])
     assert result.exit_code != 0
     assert "invalid port specification" in result.output
+
+
+def test_run_rejects_replay_only_limit_for_other_attacks() -> None:
+    result = CliRunner().invoke(main, [
+        "run", "--host", "127.0.0.1", "--port", "9999",
+        "--attack", "udp", "--max-packets", "10",
+    ])
+    assert result.exit_code != 0
+    assert "only valid with --attack replay" in result.output
