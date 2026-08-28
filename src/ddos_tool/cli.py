@@ -27,6 +27,10 @@ def _build_engine(cfg: Config):
         from .engine.tls_flood import TlsHandshakeFlood
 
         return TlsHandshakeFlood(cfg)
+    if cfg.attack == "replay":
+        from .engine.replay import PcapReplay
+
+        return PcapReplay(cfg)
     if cfg.attack == "syn":
         from .engine.syn_flood import SynFlood  # lazy: scapy is optional
 
@@ -47,7 +51,7 @@ def main() -> None:
 @click.option("--target", default=None, help="HTTP URL or legacy host:port target")
 @click.option("--host", default=None, help="IPv4 hostname/IP (with --port for TCP, UDP, or SYN)")
 @click.option("--port", type=int, default=None, help="Single destination port used with --host")
-@click.option("--attack", type=click.Choice(["http", "udp", "tcp", "tls", "syn"]), default=None, help="Traffic engine to run")
+@click.option("--attack", type=click.Choice(["http", "udp", "tcp", "tls", "syn", "replay"]), default=None, help="Traffic engine to run")
 @click.option("--duration", "-d", default=None, type=float, help="Run duration in seconds (overrides YAML)")
 @click.option("--rps", default=None, type=int, help="Target operations/second; ignored when --ramp-start is set")
 @click.option("--workers", default=None, type=int, help="Number of concurrent workers")

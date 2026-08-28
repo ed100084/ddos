@@ -93,11 +93,11 @@ ddos/
 ### R3 — 不做
 Prometheus endpoint 不在本專案範圍；目前以 stdout / `--json` 作為輸出介面。
 
-### R4 (P1)— pcap replay engine
+### R4 (P1)— pcap replay engine (UDP payload subset)
 用真實流量回放,比合成 payload 更貼近。
-- [ ] optional extra `[replay] = ["dpkt>=1.9"]`(或 scapy rdpcap);新 attack type `replay`
-- [ ] config:`replay: { file: "capture.pcap", rate_factor: 2.0 }`(2x 速度回放)
-- [ ] 保留原 packet 的 src/dst/port/payload;可選 `--randomize-src-port`
+- [x] optional extra `[replay] = ["dpkt>=1.9"]`;新 attack type `replay`
+- [x] config:`replay: { file: "capture.pcap", rate_factor: 2.0 }`(2x 速度回放)
+- [ ] 僅重播 UDP payload；目的地由 config 重寫，未保留原始 src/link-layer header
 - **AC**:對 dev_server 放一個 1s pcap,rate_factor=1 → sent ≈ pcap 內 packet 數 ±10%
 
 ### R5 (P1)— UDP engine 效能優化(已知瓶頸)

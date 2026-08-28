@@ -2,6 +2,7 @@ from .base import AttackEngine, TokenBucket
 from .http_flood import HttpFlood
 from .tcp_flood import TcpConnectFlood
 from .tls_flood import TlsHandshakeFlood
+from .replay import PcapReplay
 from .udp_flood import UdpFlood
 
-__all__ = ["AttackEngine", "TokenBucket", "HttpFlood", "TcpConnectFlood", "TlsHandshakeFlood", "UdpFlood"]
+__all__ = ["AttackEngine", "TokenBucket", "HttpFlood", "TcpConnectFlood", "TlsHandshakeFlood", "UdpFlood", "PcapReplay"]

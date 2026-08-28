@@ -18,6 +18,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=7.4"]
 syn = ["scapy>=2.5"]
+replay = ["dpkt>=1.9"]
 
 [project.scripts]
 ddos = "ddos_tool.cli:main"
