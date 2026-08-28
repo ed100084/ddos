@@ -89,19 +89,20 @@ async def scan(
 ) -> ScanReport:
     sem = asyncio.Semaphore(concurrency)
     report = ScanReport(host=host)
-    tasks = [
-        _probe_port(host, p, timeout, data_probe, sem) for p in ports
-    ]
     done = 0
-    total = len(tasks)
-    for fut in asyncio.as_completed(tasks):
-        r = await fut
-        report.results.append(r)
-        done += 1
-        if done % 5000 == 0:
+    port_list = list(ports)
+    total = len(port_list)
+    # Keep at most `concurrency` coroutine objects alive at once.
+    for start in range(0, total, max(concurrency, 1)):
+        batch = port_list[start : start + max(concurrency, 1)]
+        report.results.extend(await asyncio.gather(*(
+            _probe_port(host, p, timeout, data_probe, sem) for p in batch
+        )))
+        done += len(batch)
+        if done % 5000 == 0 or done == total:
             print(f"\r  scanned {done}/{total}", end="", flush=True)
     if total:
-        print(f"\r  scanned {total}/{total}  ", end="", flush=True)
+        print("  ", end="", flush=True)
     report.results.sort(key=lambda r: r.port)
     return report
 

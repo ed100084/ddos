@@ -83,10 +83,23 @@ def run(
     """
     from .config import Ramp
 
-    data = load_yaml(Path(config_path)) if config_path else {}
+    try:
+        data = load_yaml(Path(config_path)) if config_path else {}
+    except (OSError, ValueError) as exc:
+        raise click.ClickException(f"could not load config: {exc}") from exc
+    if target is not None and host is not None:
+        raise click.UsageError("--target and --host are mutually exclusive")
     if target is not None:
         data["target"] = target
     selected_attack = attack or data.get("attack")
+    if tcp_ports is not None and selected_attack != "tcp":
+        raise click.UsageError("--tcp-ports is only valid with --attack tcp")
+    if any(v is not None for v in (udp_size, udp_fill)) and selected_attack != "udp":
+        raise click.UsageError("--udp-size/--udp-fill are only valid with --attack udp")
+    if any(v is not None for v in (http_method, http_path, http_body)) and selected_attack != "http":
+        raise click.UsageError("--http-* options are only valid with --attack http")
+    if syn_spoof_src is not None and selected_attack != "syn":
+        raise click.UsageError("--syn-spoof-src is only valid with --attack syn")
     if host is not None:
         if port is None and ":" not in host.rsplit("/", 1)[-1] and selected_attack in ("tcp", "udp", "syn"):
             raise click.UsageError("--host for TCP/UDP/SYN must be used with --port")

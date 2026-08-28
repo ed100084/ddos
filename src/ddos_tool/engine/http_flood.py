@@ -14,7 +14,10 @@ class HttpFlood(AttackEngine):
     def __init__(self, cfg: Config) -> None:
         super().__init__(cfg.effective_rps(), cfg.workers, cfg.duration_sec)
         payload = cfg.http or HttpPayload()
-        self.url = cfg.target.rstrip("/") + (payload.path or "/")
+        path = payload.path or "/"
+        if not path.startswith(("/", "?")):
+            path = "/" + path
+        self.url = cfg.target.rstrip("/") + path
         self.method = payload.method
         self.headers = dict(payload.headers)
         self.body = payload.body.encode() if payload.body else None

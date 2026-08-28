@@ -45,7 +45,7 @@ class AttackEngine(abc.ABC):
         self.bucket = TokenBucket(rate)
         self.workers = workers
         self.duration_sec = duration_sec
-        self.stats: dict[str, float] = {"sent": 0, "ok": 0, "err": 0}
+        self.stats: dict[str, int] = {"sent": 0, "ok": 0, "err": 0}
 
     @abc.abstractmethod
     async def run(self) -> None: ...
