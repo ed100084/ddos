@@ -31,7 +31,7 @@ Python 的 **DDoS 模擬器 / Flood Generator** — 用來壓測自家入口(WAF
 - **`ddos probe <host> -p 1-65535`**:async TCP connect scanner,分類 open / closed(RST@SYN)/ filtered(timeout)+ RST-after-data 偵測
 - **Config**:YAML + pydantic v2(`src/ddos_tool/config.py`)
 - **Metrics**:live pps ticker(stderr)+ end summary(stdout);`--json` 時 stdout 純 JSON(header/ticker 走 stderr)
-- **Tests**:25 passed,pytest,**不用 pytest-asyncio**(測試自己 `asyncio.run()`,保持依賴最小)
+- **Tests**:42 passed, 2 skipped（未安裝 Scapy/dpkt 時），pytest，**不用 pytest-asyncio**
 
 ### 目標機實測事實(2026-08-28,別重新推論)
 

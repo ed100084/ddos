@@ -65,6 +65,8 @@ def report(
         return
 
     print(summarize(stats, duration_sec))
+    if "acked" in stats:
+        print(f"  acked    : {int(stats['acked'])}")
     if breaking_rps is not None:
         print(f"  breaking rps : {breaking_rps}")
     if ramp_steps:

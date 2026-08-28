@@ -60,22 +60,22 @@ async def _probe_port(
                 # Wait briefly for a reply or RST.
                 try:
                     chunk = await asyncio.wait_for(reader.read(1), timeout=0.75)
-                    result.rst_on_data = chunk == b""  # EOF (FIN) vs data; RST surfaces as error below
+                    result.rst_on_data = False if chunk == b"" else None  # clean FIN, not an RST
                 except (asyncio.TimeoutError, TimeoutError):
                     result.rst_on_data = False  # held open — real service
-            except (ConnectionResetError, OSError):
+            except OSError:
                 result.rst_on_data = True
             finally:
                 writer.close()
                 try:
                     await writer.wait_closed()
-                except (OSError, ConnectionResetError):
+                except OSError:
                     pass
         else:
             writer.close()
             try:
                 await writer.wait_closed()
-            except (OSError, ConnectionResetError):
+            except OSError:
                 pass
         return result
 

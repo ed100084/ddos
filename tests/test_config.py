@@ -14,6 +14,11 @@ def test_config_defaults() -> None:
     assert cfg.duration_sec == 60
 
 
+def test_config_rejects_unknown_keys() -> None:
+    with pytest.raises(ValueError):
+        Config(target="http://127.0.0.1:8099/", attack="http", worker=4)
+
+
 def test_config_http_requires_url() -> None:
     with pytest.raises(ValueError):
         Config(target="example.com", attack="http")
@@ -73,6 +78,7 @@ def test_syn_spoof_source_is_opt_in_and_validated() -> None:
     assert SynPayload().spoof_src is None
     assert SynPayload(spoof_src="random").spoof_src == "random"
     assert SynPayload(spoof_src="10.0.0.0/8").spoof_src == "10.0.0.0/8"
+    assert SynPayload().ack_timeout == 0.2
     with pytest.raises(ValueError):
         SynPayload(spoof_src="2001:db8::/32")
 

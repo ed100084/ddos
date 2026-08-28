@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class Rate(BaseModel):
@@ -73,6 +73,7 @@ class SynPayload(BaseModel):
     """SYN options; source spoofing is opt-in and requires raw-socket privileges."""
 
     spoof_src: str | None = None
+    ack_timeout: float = Field(default=0.2, gt=0, le=5.0)
 
     @field_validator("spoof_src")
     @classmethod
@@ -98,6 +99,7 @@ class ReplayPayload(BaseModel):
 
 
 class Config(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     target: str
     attack: Literal["http", "udp", "syn", "tcp", "tls", "replay"]
     duration_sec: float = Field(default=60.0, gt=0)
