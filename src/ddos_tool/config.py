@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ipaddress
+import os
 from pathlib import Path
 from typing import Any, Literal
 
@@ -36,6 +37,8 @@ class HttpPayload(BaseModel):
     path: str = "/"
     headers: dict[str, str] = Field(default_factory=dict)
     body: str | None = None
+    body_template: str | None = None
+    headers_random: dict[str, list[str]] = Field(default_factory=dict)
 
     @field_validator("method")
     @classmethod
@@ -48,6 +51,8 @@ class UdpPayload(BaseModel):
     fill: str = "x"
 
     def encoded(self) -> bytes:
+        if self.fill == "random":
+            return os.urandom(self.size)
         unit = self.fill.encode() or b"x"
         return (unit * ((self.size // len(unit)) + 1))[: self.size]
 

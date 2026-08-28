@@ -99,6 +99,19 @@ def test_udp_payload_encoding() -> None:
     assert p.encoded() == b"ababababab"
 
 
+def test_random_udp_payload_changes() -> None:
+    p = UdpPayload(size=32, fill="random")
+    assert len(p.encoded()) == 32
+    assert p.encoded() != p.encoded()
+
+
+def test_http_randomization_fields() -> None:
+    from ddos_tool.config import HttpPayload
+
+    p = HttpPayload(body_template="id={rand_int}", headers_random={"X-Test": ["a", "b"]})
+    assert p.body_template is not None
+
+
 def test_load_yaml(tmp_path) -> None:
     f = tmp_path / "c.yaml"
     f.write_text("target: http://x/\nattack: http\nrate:\n  rps: 42\n")
