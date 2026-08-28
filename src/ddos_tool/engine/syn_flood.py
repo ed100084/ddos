@@ -49,7 +49,7 @@ class SynFlood(AttackEngine):
             if self.syn.spoof_src:
                 send(packets, verbose=False)
                 return n, 0
-            answered, _ = sr(packets, timeout=1, verbose=False)
+            answered, _ = sr(packets, timeout=self.syn.ack_timeout, verbose=False)
             acked = sum(
                 1 for _, reply in answered
                 if reply.haslayer(TCP) and (int(reply[TCP].flags) & 0x12) == 0x12
