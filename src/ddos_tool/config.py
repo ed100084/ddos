@@ -101,8 +101,10 @@ class Config(BaseModel):
     def _check_target(self) -> Config:
         if self.attack == "http" and not self.target.startswith(("http://", "https://")):
             raise ValueError(f"http target must be a full URL (got {self.target!r})")
-        if self.attack in ("udp", "tcp") and ":" not in self.target.rsplit("/", 1)[-1]:
+        if self.attack in ("udp", "tcp", "syn") and ":" not in self.target.rsplit("/", 1)[-1]:
             raise ValueError(f"{self.attack} target must be host:port (got {self.target!r})")
+        if self.attack in ("udp", "tcp", "syn") and self.target.count(":") > 1:
+            raise ValueError("IPv6 targets are not supported; use an IPv4 host:port")
         return self
 
     def effective_rps(self) -> int:

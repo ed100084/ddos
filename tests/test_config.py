@@ -40,6 +40,13 @@ def test_config_tcp_requires_host_port() -> None:
     assert cfg.tcp.ports == [80, 8080]
 
 
+def test_config_syn_requires_supported_ipv4_host_port() -> None:
+    with pytest.raises(ValueError):
+        Config(target="127.0.0.1", attack="syn")
+    with pytest.raises(ValueError, match="IPv6"):
+        Config(target="[::1]:80", attack="syn")
+
+
 def test_tcp_payload_port_range() -> None:
     from ddos_tool.config import TcpPayload
 
