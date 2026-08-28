@@ -51,8 +51,11 @@ class SynFlood(AttackEngine):
                 return n, 0
             answered, _ = sr(packets, timeout=self.syn.ack_timeout, verbose=False)
             acked = sum(
-                1 for _, reply in answered
-                if reply.haslayer(TCP) and (int(reply[TCP].flags) & 0x12) == 0x12
+                1 for sent_packet, reply in answered
+                if sent_packet.haslayer(TCP)
+                and reply.haslayer(TCP)
+                and reply[TCP].dport == sent_packet[TCP].sport
+                and (int(reply[TCP].flags) & 0x12) == 0x12
             )
             return n, acked
 
