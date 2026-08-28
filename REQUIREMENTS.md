@@ -83,11 +83,11 @@ ddos/
 - [ ] stats 區分 `sent`(SYN 發出)與 `acked`(收到 SYN-ACK,用 sniff 或 raw socket 回讀)— MVP 可先只記 sent
 - **AC**:`ddos run -c cfg.yaml --rps 2000`(attack: syn)對 dev_server 跑 10s,sent ≈ 20k ±15%;`pytest` 全綠(scapy 沒裝時 `test_syn_flood.py` 要 skip,不能 fail)
 
-### R2 (P0)— Auto breaking-point(`--find-limit`)
+### R2 (P0)— Auto breaking-point(`--find-limit`) ✅
 現在 ramp 是固定 end_rps;要做「跑到壞為止」。
-- [ ] CLI:`ddos run -c cfg.yaml --ramp-start 500 --ramp-steps 10 --find-limit --err-threshold 5`(%)
-- [ ] 行為:每 step 結束算該 step err%,**連續 2 個 step ≥ threshold 就停**;輸出 `breaking_rps`(最後一個 < threshold 的 rate)進 summary + JSON(`result["breaking_rps"]`)
-- [ ] 可選 `--max-rps` 上限防跑爆
+- [x] CLI:`ddos run -c cfg.yaml --ramp-start 500 --ramp-steps 10 --find-limit --err-threshold 5`(%)
+- [x] 每 step 結束計算錯誤率；連續 2 個 step ≥ threshold 就停，輸出 `breaking_rps` 到 summary 與 JSON
+- [x] `--max-rps` 上限防止 ramp 超過預期
 - **AC**:對 dev_server(本地,幾乎不會壞)跑到 max;對真目標應停在 ~5000–6000 rps 附近;JSON 有 `breaking_rps` 欄位
 
 ### R3 — 不做

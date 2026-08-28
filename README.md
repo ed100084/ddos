@@ -62,6 +62,7 @@ ddos run -c /tmp/udp.yaml          # attack: udp, target: host:port
 | `--syn-spoof-src` | SYN source spoofing（`random` 或 IPv4 CIDR） |
 | `--ramp-start / --ramp-end` | **升速**:起始 → 結束 rps |
 | `--ramp-steps` | 升速級數(預設 5),每級顯示 ops + err% |
+| `--find-limit` / `--err-threshold` / `--max-rps` | 連續兩階段錯誤超標時自動停止並回報 breaking RPS |
 | `--json` | stdout 輸出機器可讀 JSON(header/ticker 走 stderr)|
 | `-q, --quiet` | 關掉 live pps 顯示 |
 
@@ -83,6 +84,13 @@ ddos run --host 127.0.0.1 --port 8443 --attack tls --rps 100 --duration 10
 ```bash
 # 升速找 breaking point:500 → 6000 rps,6 級
 ddos run -c config/example-target.yaml --ramp-start 500 --ramp-end 6000 --ramp-steps 6
+```
+
+自動尋找容量上限：
+
+```bash
+ddos run -c config/example-target.yaml --ramp-start 500 \
+  --find-limit --err-threshold 5 --max-rps 10000 --ramp-steps 10
 ```
 
 > **實測(203.0.113.17)**:瓶頸是**同時連線數**,不是頻寬 — 3000 rps @ 64 workers = 0% err,同 rate @ 300 workers = 85% err。
