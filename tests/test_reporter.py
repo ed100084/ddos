@@ -36,3 +36,9 @@ def test_build_result_is_json_serializable() -> None:
     assert set(parsed.keys()) == {
         "target", "attack", "duration_sec", "workers", "ramp", "stats", "per_step", "breaking_rps"
     }
+
+
+def test_build_result_includes_syn_acked_when_present() -> None:
+    cfg = Config(target="127.0.0.1:443", attack="syn")
+    result = build_result(cfg, {"sent": 10, "ok": 0, "err": 0, "acked": 0}, 1.0)
+    assert result["stats"]["acked"] == 0

@@ -42,6 +42,7 @@ def build_result(
             "err": err,
             "avg_rate": round(sent / max(duration_sec, 1e-9), 2),
             "err_pct": round(err / sent * 100, 3) if sent else 0.0,
+            **({"acked": int(stats["acked"])} if "acked" in stats else {}),
         },
         "per_step": per_step,
         "breaking_rps": breaking_rps,
