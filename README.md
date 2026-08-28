@@ -146,9 +146,10 @@ HTTP 可用 `body_template: "id={rand_int}"` 產生每 request 不同內容，�
 
 ## Roadmap
 
-- ✅ **短期(MVP)**:CLI + YAML config + HTTP flood(asyncio/aiohttp)+ UDP flood + token bucket + live pps 顯示 + dev target server + tests。
-- **中期**:SYN flood 除錯(scapy)、payload template、pcap replay(真實流量回放)。
-- **長期**:自動報告與其他單機壓測能力。
+- ✅ **已完成**：HTTP、UDP、TCP connect、TLS handshake、受控 SYN、probe、ramp、JSON 報告、payload randomization、UDP pcap replay、probe config export。
+- 🚧 **部分完成**：SYN spoof/ACK tracking（需 Scapy/root）；pcap replay 目前只支援 UDP payload；TCP random source port 未提供專用旗標。
+- 📌 **下一步**：補充 replay parser/timing 測試與單機 smoke benchmarks。
+- ⛔ **明確不做**：Prometheus/Grafana、GitHub Actions CI、分散式 workers。
 
 > Prometheus/Grafana、GitHub Actions CI 與分散式 workers 已明確排除在本專案範圍外；詳見 [`REQUIREMENTS.md`](REQUIREMENTS.md)。
 

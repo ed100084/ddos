@@ -77,7 +77,7 @@ ddos/
 > P0 = 先做,P1 = 次之,P2 = 有空再做。
 
 ### R1 (P0)— SYN flood engine 正式化
-`syn_flood.py` 目前是 stub(scapy lazy import、fire-and-forget)。
+`syn_flood.py` 已具備受控發送、可選 spoofing 與非 spoof 模式 ACK 統計。
 - [x] `syn` optional extra 已加入；未安裝時只在執行 SYN attack 才報錯
 - [x] 支援 opt-in **source IP spoofing**（`syn: { spoof_src: "10.0.0.0/8" | random }`）；需 root + `rp_filter=2`
 - [x] stats 已區分 `sent` 與 `acked`；非 spoof 模式用 Scapy `sr()` 統計 SYN-ACK，spoof 模式維持 `acked=0`
@@ -97,7 +97,7 @@ Prometheus endpoint 不在本專案範圍；目前以 stdout / `--json` 作為�
 用真實流量回放,比合成 payload 更貼近。
 - [x] optional extra `[replay] = ["dpkt>=1.9"]`;新 attack type `replay`
 - [x] config:`replay: { file: "capture.pcap", rate_factor: 2.0 }`(依 timestamp 以 2x 速度回放)
-- [ ] 僅重播 UDP payload；目的地由 config 重寫，未保留原始 src/link-layer header
+- [x] 僅重播 UDP payload；目的地由 config 重寫，未保留原始 src/link-layer header
 - **AC**:對 dev_server 放一個 1s pcap,rate_factor=1 → sent ≈ pcap 內 packet 數 ±10%
 
 ### R5 (P1)— UDP engine 效能優化 ✅
