@@ -34,5 +34,5 @@ def test_build_result_is_json_serializable() -> None:
     # Round-trips through json without error and keeps the key set.
     parsed = json.loads(json.dumps(res))
     assert set(parsed.keys()) == {
-        "target", "attack", "duration_sec", "workers", "ramp", "stats", "per_step"
+        "target", "attack", "duration_sec", "workers", "ramp", "stats", "per_step", "breaking_rps"
     }

@@ -8,6 +8,7 @@ def build_result(
     stats: dict[str, float],
     duration_sec: float,
     ramp_steps: list[tuple[int, int, int, int]] | None = None,
+    breaking_rps: int | None = None,
 ) -> dict:
     """Assemble a machine-readable result for one run (used by --json)."""
     sent = int(stats.get("sent", 0))
@@ -43,6 +44,7 @@ def build_result(
             "err_pct": round(err / sent * 100, 3) if sent else 0.0,
         },
         "per_step": per_step,
+        "breaking_rps": breaking_rps,
     }
 
 
@@ -52,15 +54,18 @@ def report(
     ramp_steps: list[tuple[int, int, int, int]] | None = None,
     cfg=None,
     as_json: bool = False,
+    breaking_rps: int | None = None,
 ) -> None:
     """Print the end-of-run summary to stdout (human or JSON)."""
     from .metrics import summarize
 
     if as_json and cfg is not None:
-        print(json.dumps(build_result(cfg, stats, duration_sec, ramp_steps), indent=2))
+        print(json.dumps(build_result(cfg, stats, duration_sec, ramp_steps, breaking_rps), indent=2))
         return
 
     print(summarize(stats, duration_sec))
+    if breaking_rps is not None:
+        print(f"  breaking rps : {breaking_rps}")
     if ramp_steps:
         max_ops = max(ops for _, _, ops, _ in ramp_steps) or 1
         print("  ── per-step (ramp) ─────────────")

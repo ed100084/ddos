@@ -25,7 +25,7 @@ class UdpFlood(AttackEngine):
                 lambda: _UdpReceiver(), remote_addr=(self.host, self.port)
             )
             try:
-                while True:
+                while not self.stop_event.is_set():
                     await self.bucket.acquire()
                     transport.sendto(self.payload)
                     self.stats["ok"] += 1
@@ -39,7 +39,10 @@ class UdpFlood(AttackEngine):
                 transport.close()
 
         workers = [asyncio.create_task(worker()) for _ in range(self.workers)]
-        await asyncio.sleep(self.duration_sec)
+        try:
+            await asyncio.wait_for(self.stop_event.wait(), timeout=self.duration_sec)
+        except asyncio.TimeoutError:
+            pass
         for w in workers:
             w.cancel()
         await asyncio.gather(*workers, return_exceptions=True)

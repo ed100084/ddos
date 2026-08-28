@@ -30,7 +30,7 @@ class TcpConnectFlood(AttackEngine):
 
         async def worker() -> None:
             nonlocal next_port
-            while True:
+            while not self.stop_event.is_set():
                 await self.bucket.acquire()
                 async with port_lock:
                     port = self.ports[next_port % len(self.ports)]
@@ -51,7 +51,10 @@ class TcpConnectFlood(AttackEngine):
                     self.stats["sent"] += 1
 
         workers = [asyncio.create_task(worker()) for _ in range(self.workers)]
-        await asyncio.sleep(self.duration_sec)
+        try:
+            await asyncio.wait_for(self.stop_event.wait(), timeout=self.duration_sec)
+        except asyncio.TimeoutError:
+            pass
         for w in workers:
             w.cancel()
         await asyncio.gather(*workers, return_exceptions=True)

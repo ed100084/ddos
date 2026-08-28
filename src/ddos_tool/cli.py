@@ -60,6 +60,9 @@ def main() -> None:
 @click.option("--ramp-start", "ramp_start", default=None, type=int, help="Ramp starting RPS")
 @click.option("--ramp-end", "ramp_end", default=None, type=int, help="Ramp ending RPS")
 @click.option("--ramp-steps", "ramp_steps", default=5, type=int, help="Number of ramp levels")
+@click.option("--find-limit", is_flag=True, help="Stop after two consecutive high-error ramp steps")
+@click.option("--err-threshold", type=float, default=5.0, show_default=True, help="Error percentage considered failing")
+@click.option("--max-rps", type=int, default=None, help="Safety cap for ramp end rate")
 @click.option("--json", "as_json", is_flag=True, help="Print only the final machine-readable JSON to stdout")
 @click.option("--quiet", "-q", is_flag=True, help="Suppress live rate output on stderr")
 def run(
@@ -81,6 +84,9 @@ def run(
     ramp_start: int | None,
     ramp_end: int | None,
     ramp_steps: int,
+    find_limit: bool,
+    err_threshold: float,
+    max_rps: int | None,
     as_json: bool,
     quiet: bool,
 ) -> None:
@@ -155,6 +161,11 @@ def run(
             "end_rps": ramp_end or max(base * 4, ramp_start or base),
             "steps": ramp_steps,
         }
+    if find_limit and not (ramp_start is not None or ramp_end is not None or data.get("ramp")):
+        base = (data.get("rate") or {}).get("rps", 10_000)
+        data["ramp"] = {"start_rps": base, "end_rps": max_rps or base * 4, "steps": ramp_steps}
+    if max_rps is not None and data.get("ramp"):
+        data["ramp"]["end_rps"] = min(data["ramp"]["end_rps"], max_rps)
     try:
         cfg = Config(**data)
     except ValueError as exc:
@@ -174,7 +185,7 @@ def run(
 
         tick_task = asyncio.create_task(ticker())
         ramp_task = (
-            asyncio.create_task(_ramp_controller(engine, cfg, ramp_steps_table))
+                asyncio.create_task(_ramp_controller(engine, cfg, ramp_steps_table, find_limit, err_threshold))
             if cfg.ramp is not None
             else None
         )
@@ -203,11 +214,13 @@ def run(
         err=as_json,
     )
     asyncio.run(go())
-    report(engine.stats, cfg.duration_sec, ramp_steps=ramp_steps_table or None, cfg=cfg, as_json=as_json)
+    report(engine.stats, cfg.duration_sec, ramp_steps=ramp_steps_table or None, cfg=cfg,
+           as_json=as_json, breaking_rps=engine.breaking_rps)
 
 
 async def _ramp_controller(
-    engine, cfg: Config, steps_table: list[tuple[int, int, int, int]] | None = None
+    engine, cfg: Config, steps_table: list[tuple[int, int, int, int]] | None = None,
+    find_limit: bool = False, err_threshold: float = 5.0,
 ) -> None:
     """Step the engine's token bucket from ramp.start_rps to ramp.end_rps.
 
@@ -217,6 +230,7 @@ async def _ramp_controller(
     rates = cfg.ramp.rates()
     step_dur = cfg.duration_sec / len(rates)
     prev_sent = prev_err = 0
+    consecutive_failures = 0
     for i, r in enumerate(rates):
         engine.bucket.set_rate(r)
         await asyncio.sleep(step_dur)
@@ -224,6 +238,16 @@ async def _ramp_controller(
             sent_now = int(engine.stats.get("sent", 0))
             err_now = int(engine.stats.get("err", 0))
             steps_table.append((i + 1, r, sent_now - prev_sent, err_now - prev_err))
+            ops = sent_now - prev_sent
+            errs = err_now - prev_err
+            if find_limit and ops and errs / ops * 100 >= err_threshold:
+                consecutive_failures += 1
+            else:
+                consecutive_failures = 0
+            if find_limit and consecutive_failures >= 2:
+                engine.breaking_rps = rates[i - 2] if i >= 2 else rates[0]
+                engine.stop()
+                return
             prev_sent, prev_err = sent_now, err_now
 
 

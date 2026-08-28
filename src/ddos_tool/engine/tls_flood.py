@@ -24,7 +24,7 @@ class TlsHandshakeFlood(AttackEngine):
         timeout = 10.0
 
         async def worker() -> None:
-            while True:
+            while not self.stop_event.is_set():
                 await self.bucket.acquire()
                 try:
                     reader, writer = await asyncio.wait_for(
@@ -48,7 +48,10 @@ class TlsHandshakeFlood(AttackEngine):
                     self.stats["sent"] += 1
 
         workers = [asyncio.create_task(worker()) for _ in range(self.workers)]
-        await asyncio.sleep(self.duration_sec)
+        try:
+            await asyncio.wait_for(self.stop_event.wait(), timeout=self.duration_sec)
+        except asyncio.TimeoutError:
+            pass
         for worker_task in workers:
             worker_task.cancel()
         await asyncio.gather(*workers, return_exceptions=True)

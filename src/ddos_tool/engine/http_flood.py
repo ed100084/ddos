@@ -30,7 +30,7 @@ class HttpFlood(AttackEngine):
         ) as session:
 
             async def worker() -> None:
-                while True:
+                while not self.stop_event.is_set():
                     await self.bucket.acquire()
                     try:
                         async with session.request(self.method, self.url, data=self.body) as resp:
@@ -45,7 +45,10 @@ class HttpFlood(AttackEngine):
                         self.stats["sent"] += 1
 
             workers = [asyncio.create_task(worker()) for _ in range(self.workers)]
-            await asyncio.sleep(self.duration_sec)
+            try:
+                await asyncio.wait_for(self.stop_event.wait(), timeout=self.duration_sec)
+            except asyncio.TimeoutError:
+                pass
             for w in workers:
                 w.cancel()
             # Let in-flight requests drain; ignore their CancelledError.

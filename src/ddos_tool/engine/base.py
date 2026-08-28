@@ -46,6 +46,11 @@ class AttackEngine(abc.ABC):
         self.workers = workers
         self.duration_sec = duration_sec
         self.stats: dict[str, int] = {"sent": 0, "ok": 0, "err": 0}
+        self.stop_event = asyncio.Event()
+        self.breaking_rps: int | None = None
+
+    def stop(self) -> None:
+        self.stop_event.set()
 
     @abc.abstractmethod
     async def run(self) -> None: ...
