@@ -16,8 +16,8 @@ Python 開發的 DDoS **模擬器 / Flood Generator** — 用來壓測自家入�
 
 ```
 CLI (click) → Config (YAML + pydantic) → Engine (asyncio workers)
-    → Attack modules (http / udp / syn) → Rate limiter (token bucket)
-    → Metrics (counters, Prometheus) → Reporter (summary)
+    → Attack modules (http / udp / tcp / tls / syn / replay) → Rate limiter (token bucket)
+    → Metrics (counters) → Reporter (summary / JSON)
 ```
 
 ## 攻擊引擎
@@ -27,7 +27,9 @@ CLI (click) → Config (YAML + pydantic) → Engine (asyncio workers)
 | L7 HTTP flood | asyncio + aiohttp(完整 TLS/HTTP)| ✅ |
 | L4 UDP flood | asyncio datagram endpoint | ✅ |
 | L4 TCP connect flood | asyncio open/close,可多 port round-robin | ✅ |
+| TLS handshake flood | asyncio TLS connect/close | ✅ |
 | SYN flood | scapy raw socket(需 root / `CAP_NET_RAW`)| 🚧 選裝(`pip install -e '.[syn]'`) |
+| UDP pcap replay | dpkt payload replay with timestamp scaling | ✅ 選裝(`pip install -e '.[replay]'`) |
 
 ## 快速開始
 
@@ -123,7 +125,7 @@ ddos probe 10.0.0.5 -p 80,443 --emit-config /tmp/target.yaml
 ### 驗證過的 smoke test(單機)
 
 - HTTP:2000 rps × 5s → **10,500 req,100% ok**
-- UDP:5000 rps × 3s → **~16k packets,100% ok**(server 端同步收到)
+- UDP:5000 rps × 3s → **~16k packets,100% ok**（歷史基準；實際 PPS 依環境而異）
 
 ### Example config
 
@@ -146,12 +148,10 @@ HTTP 可用 `body_template: "id={rand_int}"` 產生每 request 不同內容，�
 
 ## Roadmap
 
-- ✅ **已完成**：HTTP、UDP、TCP connect、TLS handshake、受控 SYN、probe、ramp、JSON 報告、payload randomization、UDP pcap replay、probe config export。
-- 🚧 **部分完成**：SYN spoof/ACK tracking（需 Scapy/root）；pcap replay 目前只支援 UDP payload；TCP random source port 未提供專用旗標。
+- ✅ **已完成**：HTTP、UDP、TCP connect、TLS handshake、probe、ramp、JSON 報告、payload randomization、UDP pcap replay、probe config export。
+- 🚧 **進階/部分完成**：SYN（需 Scapy/root；spoof 與 ACK tracking）；pcap replay 目前只支援 UDP payload；TCP random source port 未提供專用旗標。
 - 📌 **下一步**：補充 replay parser/timing 測試與單機 smoke benchmarks。
 - ⛔ **明確不做**：Prometheus/Grafana、GitHub Actions CI、分散式 workers。
-
-> Prometheus/Grafana、GitHub Actions CI 與分散式 workers 已明確排除在本專案範圍外；詳見 [`REQUIREMENTS.md`](REQUIREMENTS.md)。
 
 ## Repo 結構
 
@@ -166,11 +166,14 @@ ddos/
 │   ├── engine/base.py    # AttackEngine ABC + TokenBucket
 │   ├── engine/http_flood.py
 │   ├── engine/udp_flood.py
+│   ├── engine/tcp_flood.py
+│   ├── engine/tls_flood.py
+│   ├── engine/replay.py
 │   ├── engine/syn_flood.py
 │   ├── metrics.py        # live pps + summary
 │   ├── probe.py          # TCP connect scanner (ddos probe)
 │   └── reporter.py       # 結束 summary
-└── tests/                # config / token bucket / HTTP e2e / probe
+└── tests/                # config / engines / CLI / probe / reporter
 ```
 
 ## 風險
