@@ -103,6 +103,9 @@ ddos probe 203.0.113.17 -p 1-65535 -c 2000 -t 1.0
 
 # 指定 port / range
 ddos probe 10.0.0.5 -p 80,443,8000-9000
+
+# 掃描結果產生 TCP run config
+ddos probe 10.0.0.5 -p 80,443 --emit-config /tmp/target.yaml
 ```
 
 輸出分類:`open`(✓ holds connection = 真 service / ⚠ RST-after-data = firewall/middlebox)、`closed`(RST@SYN)、`filtered`(timeout)。

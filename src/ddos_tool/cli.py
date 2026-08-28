@@ -5,6 +5,7 @@ import time
 from pathlib import Path
 
 import click
+import yaml
 
 from .config import Config, load_yaml
 from .engine.http_flood import HttpFlood
@@ -257,7 +258,8 @@ async def _ramp_controller(
 @click.option("--concurrency", "-c", default=2000, type=int, help="Parallel connections")
 @click.option("--timeout", "-t", default=1.0, type=float, help="Per-port timeout (s)")
 @click.option("--no-data-probe", is_flag=True, help="Skip the RST-after-data check on open ports")
-def probe(host: str, ports: str, concurrency: int, timeout: float, no_data_probe: bool) -> None:
+@click.option("--emit-config", type=click.Path(), default=None, help="Write a runnable TCP config YAML from open ports")
+def probe(host: str, ports: str, concurrency: int, timeout: float, no_data_probe: bool, emit_config: str | None) -> None:
     """Scan TCP ports and classify them as open, closed, or filtered.
 
     Open ports are data-probed by default to detect immediate RST-after-data
@@ -270,6 +272,21 @@ def probe(host: str, ports: str, concurrency: int, timeout: float, no_data_probe
     t0 = time.monotonic()
     rep = asyncio.run(scan(host, port_list, concurrency=concurrency, timeout=timeout, data_probe=not no_data_probe))
     click.echo(format_report(rep, time.monotonic() - t0))
+    if emit_config:
+        open_ports = [result.port for result in rep.open]
+        selected_ports = open_ports or [80]
+        output = Path(emit_config)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        config = {
+            "target": f"{host}:{selected_ports[0]}",
+            "attack": "tcp",
+            "duration_sec": 30,
+            "rate": {"rps": 1000},
+            "workers": 8,
+            "tcp": {"ports": selected_ports},
+        }
+        output.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
+        click.echo(f"wrote config: {output}")
 
 
 def _parse_ports(spec: str) -> list[int]:
