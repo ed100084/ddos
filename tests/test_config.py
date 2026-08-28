@@ -1,0 +1,57 @@
+from __future__ import annotations
+
+import asyncio
+
+import pytest
+
+from ddos_tool.config import Config, Rate, UdpPayload, load_yaml
+
+
+def test_config_defaults() -> None:
+    cfg = Config(target="http://127.0.0.1:8099/", attack="http")
+    assert cfg.rate.rps == 10_000
+    assert cfg.workers == 8
+    assert cfg.duration_sec == 60
+
+
+def test_config_http_requires_url() -> None:
+    with pytest.raises(ValueError):
+        Config(target="example.com", attack="http")
+
+
+def test_config_udp_requires_host_port() -> None:
+    with pytest.raises(ValueError):
+        Config(target="127.0.0.1", attack="udp")
+    cfg = Config(target="127.0.0.1:9999", attack="udp")
+    assert cfg.attack == "udp"
+
+
+def test_udp_payload_encoding() -> None:
+    p = UdpPayload(size=10, fill="ab")
+    assert len(p.encoded()) == 10
+    assert p.encoded() == b"ababababab"
+
+
+def test_load_yaml(tmp_path) -> None:
+    f = tmp_path / "c.yaml"
+    f.write_text("target: http://x/\nattack: http\nrate:\n  rps: 42\n")
+    data = load_yaml(f)
+    cfg = Config(**data)
+    assert cfg.rate.rps == 42
+
+
+def test_token_bucket_pacing() -> None:
+    from ddos_tool.engine.base import TokenBucket
+
+    async def go():
+        b = TokenBucket(rate=1000)
+        import time
+
+        t0 = time.monotonic()
+        for _ in range(50):
+            await b.acquire()
+        return (time.monotonic() - t0) * 1000
+
+    ms = asyncio.run(go())
+    # 50 ops @ 1000/s ≈ 50ms; allow generous slack for CI.
+    assert ms < 300, f"token bucket too slow: {ms:.0f}ms"

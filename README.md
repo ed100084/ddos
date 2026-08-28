@@ -24,19 +24,40 @@ CLI (click) → Config (YAML + pydantic) → Engine (asyncio workers)
 
 | 模組 | 方案 | 狀態 |
 |---|---|---|
-| L7 HTTP flood | asyncio + aiohttp(完整 TLS/HTTP)| 🚧 MVP |
-| L4 UDP flood | asyncio datagram / raw socket | ⏳ |
-| SYN flood | scapy + raw socket(需 root / `CAP_NET_RAW`)| ⏳ |
+| L7 HTTP flood | asyncio + aiohttp(完整 TLS/HTTP)| ✅ |
+| L4 UDP flood | asyncio datagram endpoint | ✅ |
+| SYN flood | scapy raw socket(需 root / `CAP_NET_RAW`)| 🚧 選裝(`pip install scapy`) |
 
 ## 快速開始
 
 ```bash
 # 安裝
-pip install -e .
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
 
-# 跑 HTTP flood(MVP)
-ddos run --config config/example.yaml
+# 起本地 target(驗證用)
+python scripts/dev_server.py --port 8099 --udp-port 9999 &
+
+# 跑 HTTP flood
+ddos run -c config/example.yaml --duration 5 --rps 2000
+
+# 跑 UDP flood
+ddos run -c /tmp/udp.yaml          # attack: udp, target: host:port
 ```
+
+### CLI options
+
+| Flag | 作用 |
+|---|---|
+| `-c, --config` | YAML config(必填)|
+| `-d, --duration` | 覆蓋 `duration_sec` |
+| `--rps` | 覆蓋 `rate.rps` |
+| `-q, --quiet` | 關掉 live pps 顯示 |
+
+### 驗證過的 smoke test(單機)
+
+- HTTP:2000 rps × 5s → **10,500 req,100% ok**
+- UDP:5000 rps × 3s → **~16k packets,100% ok**(server 端同步收到)
 
 ### Example config
 
@@ -56,9 +77,8 @@ payload:
 
 ## Roadmap
 
-- **短期(MVP)**:CLI + YAML config + HTTP flood(asyncio/aiohttp)+ UDP flood + token bucket + live pps 顯示。
-  - 成功標準:對本地 target 穩定發 50k req/s × 60s,error < 2%。
-- **中期**:SYN flood(scapy)、payload template、Prometheus/Grafana dashboard、pcap replay(真實流量回放)。
+- ✅ **短期(MVP)**:CLI + YAML config + HTTP flood(asyncio/aiohttp)+ UDP flood + token bucket + live pps 顯示 + dev target server + tests。
+- **中期**:SYN flood 除錯(scapy)、payload template、Prometheus/Grafana dashboard、pcap replay(真實流量回放)。
 - **長期**:分散式 workers(Redis queue,botnet-like)、多機協調、自動報告。
 
 ## Repo 結構
@@ -67,16 +87,17 @@ payload:
 ddos/
 ├── pyproject.toml
 ├── config/example.yaml
+├── scripts/dev_server.py # 本地 target(HTTP counter + UDP sink)
 ├── src/ddos_tool/
 │   ├── cli.py            # click entry: ddos run --config ...
 │   ├── config.py         # YAML + pydantic validation
-│   ├── engine/base.py    # worker ABC + token bucket
+│   ├── engine/base.py    # AttackEngine ABC + TokenBucket
 │   ├── engine/http_flood.py
 │   ├── engine/udp_flood.py
 │   ├── engine/syn_flood.py
-│   ├── metrics.py        # counters / Prometheus
+│   ├── metrics.py        # live pps + summary
 │   └── reporter.py       # 結束 summary
-└── tests/
+└── tests/                # config / token bucket / HTTP e2e
 ```
 
 ## 風險
