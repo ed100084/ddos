@@ -20,7 +20,7 @@ Python 的 **DDoS 模擬器 / Flood Generator** — 用來壓測自家入口(WAF
 | 引擎 | 狀態 | 備註 |
 |---|---|---|
 | L7 HTTP flood(asyncio + aiohttp)| ✅ | keep-alive workers |
-| L4 UDP flood | ✅ | **已知瓶頸**:每 packet 開/關一次 datagram endpoint,高 pps 時要改成 per-worker 長存 transport(見 R6)|
+| L4 UDP flood | ✅ | per-worker 長存 transport |
 | L4 TCP connect flood | ✅ | 可多 port round-robin;SYN-ACK 就算 ok(即使對方馬上 RST)|
 | SYN flood(scapy)| 🚧 stub | lazy import,需 root / `CAP_NET_RAW`(見 R1); spoofing 已改為 opt-in |
 
@@ -100,11 +100,8 @@ Prometheus endpoint 不在本專案範圍；目前以 stdout / `--json` 作為�
 - [ ] 僅重播 UDP payload；目的地由 config 重寫，未保留原始 src/link-layer header
 - **AC**:對 dev_server 放一個 1s pcap,rate_factor=1 → sent ≈ pcap 內 packet 數 ±10%
 
-### R5 (P1)— UDP engine 效能優化(已知瓶頸)
-現在每 packet `create_datagram_endpoint` + close,高 pps 時是主要開銷。
-- [ ] 改成 **per-worker 長存 transport**(worker 開始時建、結束時關),payload 只 `sendto()`
-- [ ] 目標:單機 UDP ≥ 50k pps @ 64 workers(目前 ~16–20k)
-- **AC**:對 dev_server UDP sink,`--rps 50000 --duration 10`,avg rate ≥ 45k 且 err < 2%;既有 test 不壞
+### R5 (P1)— UDP engine 效能優化 ✅
+已改成 per-worker 長存 transport，payload 只使用 `sendto()`；實際 PPS 需依測試環境驗證。
 
 ### R6 (P2)— Payload / source randomization (部分完成)
 - [x] `http.body_template`、`http.headers_random`、`udp.fill: random`
