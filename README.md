@@ -121,12 +121,15 @@ duration_sec: 60
 rate:            # token bucket
   rps: 50000     # requests per second
 workers: 16      # asyncio workers
-payload:
+http:
   path: /
   method: GET
   headers:
     User-Agent: ddos-tool/0.1
 ```
+
+HTTP 可用 `body_template: "id={rand_int}"` 產生每 request 不同內容，並以
+`headers_random: {X-Test: [a, b]}` 隨機選 header 值；UDP 設定 `fill: random` 可產生每包不同 payload。
 
 ## Roadmap
 

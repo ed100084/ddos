@@ -106,8 +106,8 @@ Prometheus endpoint 不在本專案範圍；目前以 stdout / `--json` 作為�
 - [ ] 目標:單機 UDP ≥ 50k pps @ 64 workers(目前 ~16–20k)
 - **AC**:對 dev_server UDP sink,`--rps 50000 --duration 10`,avg rate ≥ 45k 且 err < 2%;既有 test 不壞
 
-### R6 (P2)— Payload / source randomization
-- [ ] `http: { body_template: "...{rand_int}...", headers_random: [...] }`、`udp: { fill: "random" | "x" }`
+### R6 (P2)— Payload / source randomization (部分完成)
+- [x] `http.body_template`、`http.headers_random`、`udp.fill: random`
 - [ ] TCP connect flood 可選 **random src port**(要 raw socket,或接受 OS 分配)
 - **AC**:同一 run 內抓 pcap(或用 dev_server 記 payload),確認有變化
 
