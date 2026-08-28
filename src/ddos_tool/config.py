@@ -93,6 +93,8 @@ class SynPayload(BaseModel):
 class ReplayPayload(BaseModel):
     file: str
     rate_factor: float = Field(default=1.0, gt=0)
+    max_packets: int = Field(default=100_000, ge=1)
+    max_rps: int = Field(default=10_000, ge=1)
 
 
 class Config(BaseModel):

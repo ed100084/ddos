@@ -68,6 +68,7 @@ def main() -> None:
 @click.option("--find-limit", is_flag=True, help="Stop after two consecutive high-error ramp steps")
 @click.option("--err-threshold", type=float, default=5.0, show_default=True, help="Error percentage considered failing")
 @click.option("--max-rps", type=int, default=None, help="Safety cap for ramp end rate")
+@click.option("--max-packets", type=int, default=None, help="Replay packet limit")
 @click.option("--json", "as_json", is_flag=True, help="Print only the final machine-readable JSON to stdout")
 @click.option("--quiet", "-q", is_flag=True, help="Suppress live rate output on stderr")
 def run(
@@ -92,6 +93,7 @@ def run(
     find_limit: bool,
     err_threshold: float,
     max_rps: int | None,
+    max_packets: int | None,
     as_json: bool,
     quiet: bool,
 ) -> None:
@@ -171,6 +173,10 @@ def run(
         data["ramp"] = {"start_rps": base, "end_rps": max_rps or base * 4, "steps": ramp_steps}
     if max_rps is not None and data.get("ramp"):
         data["ramp"]["end_rps"] = min(data["ramp"]["end_rps"], max_rps)
+    if max_rps is not None and (data.get("attack") == "replay"):
+        data.setdefault("replay", {})["max_rps"] = max_rps
+    if max_packets is not None:
+        data.setdefault("replay", {})["max_packets"] = max_packets
     try:
         cfg = Config(**data)
     except ValueError as exc:

@@ -63,6 +63,7 @@ ddos run -c /tmp/udp.yaml          # attack: udp, target: host:port
 | `--ramp-start / --ramp-end` | **升速**:起始 → 結束 rps |
 | `--ramp-steps` | 升速級數(預設 5),每級顯示 ops + err% |
 | `--find-limit` / `--err-threshold` / `--max-rps` | 連續兩階段錯誤超標時自動停止並回報 breaking RPS |
+| `--max-packets` | replay 封包數上限 |
 | `--json` | stdout 輸出機器可讀 JSON(header/ticker 走 stderr)|
 | `-q, --quiet` | 關掉 live pps 顯示 |
 

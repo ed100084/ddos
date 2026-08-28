@@ -57,6 +57,7 @@ def test_config_tls_requires_host_port() -> None:
 def test_config_replay() -> None:
     cfg = Config(target="127.0.0.1:9999", attack="replay", replay=ReplayPayload(file="x.pcap", rate_factor=2))
     assert cfg.replay.rate_factor == 2
+    assert cfg.replay.max_packets == 100_000
     with pytest.raises(ValueError, match="replay.file"):
         Config(target="127.0.0.1:9999", attack="replay")
 

@@ -21,6 +21,8 @@ class PcapReplay(AttackEngine):
             raise ValueError("replay attack requires replay.file")
         self.file = Path(cfg.replay.file)
         self.rate_factor = cfg.replay.rate_factor
+        self.max_packets = cfg.replay.max_packets
+        self.max_rps = cfg.replay.max_rps
         host, _, port_s = cfg.target.rpartition(":")
         self.host, self.port = host, int(port_s or 9999)
 
@@ -53,7 +55,7 @@ class PcapReplay(AttackEngine):
         )
         try:
             index = 0
-            while not self.stop_event.is_set():
+            while not self.stop_event.is_set() and self.stats["sent"] < self.max_packets:
                 await self.bucket.acquire()
                 timestamp, payload = payloads[index % len(payloads)]
                 transport.sendto(payload)
@@ -65,7 +67,7 @@ class PcapReplay(AttackEngine):
                     delay = 0.0
                 else:
                     delay = max(0.0, next_timestamp - timestamp) / self.rate_factor
-                if delay:
-                    await asyncio.sleep(delay)
+                delay = max(delay, 1.0 / self.max_rps)
+                await asyncio.sleep(delay)
         finally:
             transport.close()
