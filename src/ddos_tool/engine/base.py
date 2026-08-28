@@ -15,6 +15,14 @@ class TokenBucket:
         self._last = time.monotonic()
         self._lock = asyncio.Lock()
 
+    def set_rate(self, new_rate: float) -> None:
+        """Change the pace mid-run (used by ramp-up). Clamps tokens so a slower
+        rate doesn't release a burst of stale fast-rate tokens."""
+        self.rate = max(new_rate, 1e-9)
+        self.capacity = max(self.rate * 0.25, 1.0)
+        if self._tokens > self.capacity:
+            self._tokens = self.capacity
+
     async def acquire(self, n: float = 1.0) -> None:
         while True:
             async with self._lock:

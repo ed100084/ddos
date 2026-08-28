@@ -10,7 +10,7 @@ class UdpFlood(AttackEngine):
     """L4 flood: N senders firing fixed-size datagrams at host:port."""
 
     def __init__(self, cfg: Config) -> None:
-        super().__init__(cfg.rate.rps, cfg.workers, cfg.duration_sec)
+        super().__init__(cfg.effective_rps(), cfg.workers, cfg.duration_sec)
         payload = cfg.udp or UdpPayload()
         self.payload = payload.encoded()
         host, _, port_s = cfg.target.partition(":")

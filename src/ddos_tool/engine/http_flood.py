@@ -12,7 +12,7 @@ class HttpFlood(AttackEngine):
     """L7 flood: N concurrent keep-alive connections firing requests at a target rate."""
 
     def __init__(self, cfg: Config) -> None:
-        super().__init__(cfg.rate.rps, cfg.workers, cfg.duration_sec)
+        super().__init__(cfg.effective_rps(), cfg.workers, cfg.duration_sec)
         payload = cfg.http or HttpPayload()
         self.url = cfg.target.rstrip("/") + (payload.path or "/")
         self.method = payload.method

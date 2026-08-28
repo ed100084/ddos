@@ -18,7 +18,7 @@ class Metrics:
         self._last_tick = self.start
         self._last_sent = 0
 
-    def tick(self, sent_total: int) -> None:
+    def tick(self, sent_total: int, target_rate: float | None = None) -> None:
         """Call periodically; prints a one-line rate update if verbose."""
         now = time.monotonic()
         if not (self.verbose and now - self._last_tick >= 1.0):
@@ -26,8 +26,9 @@ class Metrics:
         window = now - self._last_tick
         pps = (sent_total - self._last_sent) / window if window > 0 else 0.0
         elapsed = now - self.start
+        rate_part = f"  target={target_rate:7.0f}" if target_rate is not None else ""
         print(
-            f"\r  t={elapsed:6.1f}s  {pps:9.0f} ops/s  total={sent_total}",
+            f"\r  t={elapsed:6.1f}s  {pps:9.0f} ops/s{rate_part}  total={sent_total}",
             end="",
             file=sys.stderr,
             flush=True,

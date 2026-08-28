@@ -11,8 +11,8 @@ class SynFlood(AttackEngine):
     """L4 SYN flood via scapy raw sockets. Needs root or CAP_NET_RAW; IP spoofing needs rp_filter off."""
 
     def __init__(self, cfg: Config) -> None:
-        super().__init__(cfg.rate.rps, cfg.workers, cfg.duration_sec)
-        self.target_rps = cfg.rate.rps
+        super().__init__(cfg.effective_rps(), cfg.workers, cfg.duration_sec)
+        self.target_rps = cfg.effective_rps()
         host, _, port_s = cfg.target.partition(":")
         self.host = host
         self.port = int(port_s or 80)

@@ -13,6 +13,23 @@ class Rate(BaseModel):
     rps: int = Field(default=10_000, ge=1, description="target ops per second")
 
 
+class Ramp(BaseModel):
+    """Stepwise ramp-up: linearly move from start_rps to end_rps over the run.
+
+    `steps` is the number of discrete levels; each level holds for duration/steps.
+    """
+
+    start_rps: int = Field(default=1_000, ge=1)
+    end_rps: int = Field(default=5_000, ge=1)
+    steps: int = Field(default=5, ge=1, le=64)
+
+    def rates(self) -> list[int]:
+        if self.steps == 1 or self.start_rps == self.end_rps:
+            return [self.end_rps]
+        span = (self.end_rps - self.start_rps) / (self.steps - 1)
+        return [max(1, round(self.start_rps + i * span)) for i in range(self.steps)]
+
+
 class HttpPayload(BaseModel):
     method: str = "GET"
     path: str = "/"
@@ -52,6 +69,7 @@ class Config(BaseModel):
     duration_sec: float = Field(default=60.0, gt=0)
     rate: Rate = Field(default_factory=Rate)
     workers: int = Field(default=8, ge=1, le=512)
+    ramp: Ramp | None = None
     http: HttpPayload | None = None
     udp: UdpPayload | None = None
     tcp: TcpPayload | None = None
@@ -63,6 +81,10 @@ class Config(BaseModel):
         if self.attack in ("udp", "tcp") and ":" not in self.target.rsplit("/", 1)[-1]:
             raise ValueError(f"{self.attack} target must be host:port (got {self.target!r})")
         return self
+
+    def effective_rps(self) -> int:
+        """Starting rate: ramp.start if ramping, else flat rate."""
+        return self.ramp.start_rps if self.ramp else self.rate.rps
 
 
 def load_yaml(path: str | Path) -> dict[str, Any]:
