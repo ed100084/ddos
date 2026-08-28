@@ -96,7 +96,7 @@ Prometheus endpoint 不在本專案範圍；目前以 stdout / `--json` 作為�
 ### R4 (P1)— pcap replay engine (UDP payload subset)
 用真實流量回放,比合成 payload 更貼近。
 - [x] optional extra `[replay] = ["dpkt>=1.9"]`;新 attack type `replay`
-- [x] config:`replay: { file: "capture.pcap", rate_factor: 2.0 }`(2x 速度回放)
+- [x] config:`replay: { file: "capture.pcap", rate_factor: 2.0 }`(依 timestamp 以 2x 速度回放)
 - [ ] 僅重播 UDP payload；目的地由 config 重寫，未保留原始 src/link-layer header
 - **AC**:對 dev_server 放一個 1s pcap,rate_factor=1 → sent ≈ pcap 內 packet 數 ±10%
 

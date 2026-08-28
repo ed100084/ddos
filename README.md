@@ -81,7 +81,8 @@ TLS handshake 測試（`host:port`，完成握手後立即關閉）：
 ddos run --host 127.0.0.1 --port 8443 --attack tls --rps 100 --duration 10
 ```
 
-安全版 pcap replay 只重播 UDP payload，並重寫目的地（需 `pip install -e '.[replay]'`）：
+安全版 pcap replay 只重播 UDP payload，並重寫目的地；會依 pcap timestamp 重現封包間隔，
+`rate_factor: 2.0` 代表時間間隔縮短為一半（需 `pip install -e '.[replay]'`）：
 
 ```yaml
 target: 127.0.0.1:9999
