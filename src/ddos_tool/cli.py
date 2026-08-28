@@ -29,32 +29,35 @@ def _build_engine(cfg: Config):
     raise click.ClickException(f"unknown attack type: {cfg.attack}")
 
 
-@click.group()
+@click.group(context_settings={"max_content_width": 110})
 def main() -> None:
-    """ddos-tool — DDoS simulator / flood generator for load-testing your edge."""
+    """ddos-tool — single-host traffic simulator for authorized load testing.
+
+    Use only against systems you own or have explicit permission to test.
+    """
 
 
 @main.command()
-@click.option("--config", "-c", "config_path", required=False, type=click.Path(exists=True), help="YAML config file (optional when using CLI settings)")
-@click.option("--target", default=None, help="Target URL or host:port")
-@click.option("--host", default=None, help="Target hostname or IP (use with --port for TCP/UDP/SYN)")
-@click.option("--port", type=int, default=None, help="Target port (use with --host for TCP/UDP/SYN)")
-@click.option("--attack", type=click.Choice(["http", "udp", "tcp", "syn"]), default=None, help="Attack engine")
-@click.option("--duration", "-d", default=None, type=float, help="Override duration_sec")
-@click.option("--rps", default=None, type=int, help="Override rate.rps (ignored if ramping)")
-@click.option("--workers", default=None, type=int, help="Override worker count")
-@click.option("--udp-size", default=None, type=int, help="Override UDP payload size")
-@click.option("--udp-fill", default=None, help="Override UDP payload fill")
-@click.option("--tcp-ports", default=None, help="Override TCP ports, e.g. 80,8080")
-@click.option("--http-method", default=None, help="Override HTTP method")
-@click.option("--http-path", default=None, help="Override HTTP path")
-@click.option("--http-body", default=None, help="Override HTTP request body")
-@click.option("--syn-spoof-src", default=None, help="SYN source spoofing: random or IPv4 CIDR")
-@click.option("--ramp-start", "ramp_start", default=None, type=int, help="Ramp-up: starting rps")
-@click.option("--ramp-end", "ramp_end", default=None, type=int, help="Ramp-up: ending rps")
-@click.option("--ramp-steps", "ramp_steps", default=5, type=int, help="Number of ramp levels (default 5)")
-@click.option("--json", "as_json", is_flag=True, help="Emit a machine-readable JSON result instead of the human summary")
-@click.option("--quiet", "-q", is_flag=True, help="Suppress live pps output")
+@click.option("--config", "-c", "config_path", required=False, type=click.Path(exists=True), help="YAML config; CLI options override it")
+@click.option("--target", default=None, help="HTTP URL or legacy host:port target")
+@click.option("--host", default=None, help="IPv4 hostname/IP (with --port for TCP, UDP, or SYN)")
+@click.option("--port", type=int, default=None, help="Single destination port used with --host")
+@click.option("--attack", type=click.Choice(["http", "udp", "tcp", "syn"]), default=None, help="Traffic engine to run")
+@click.option("--duration", "-d", default=None, type=float, help="Run duration in seconds (overrides YAML)")
+@click.option("--rps", default=None, type=int, help="Target operations/second; ignored when --ramp-start is set")
+@click.option("--workers", default=None, type=int, help="Number of concurrent workers")
+@click.option("--udp-size", default=None, type=int, help="UDP payload size in bytes")
+@click.option("--udp-fill", default=None, help="UDP payload fill string")
+@click.option("--tcp-ports", default=None, help="TCP destination ports, e.g. 80,8080")
+@click.option("--http-method", default=None, help="HTTP method, e.g. GET or POST")
+@click.option("--http-path", default=None, help="HTTP request path")
+@click.option("--http-body", default=None, help="HTTP request body")
+@click.option("--syn-spoof-src", default=None, help="Opt-in SYN spoofing: random or IPv4 CIDR")
+@click.option("--ramp-start", "ramp_start", default=None, type=int, help="Ramp starting RPS")
+@click.option("--ramp-end", "ramp_end", default=None, type=int, help="Ramp ending RPS")
+@click.option("--ramp-steps", "ramp_steps", default=5, type=int, help="Number of ramp levels")
+@click.option("--json", "as_json", is_flag=True, help="Print only the final machine-readable JSON to stdout")
+@click.option("--quiet", "-q", is_flag=True, help="Suppress live rate output on stderr")
 def run(
     config_path: str | None,
     target: str | None,
@@ -77,9 +80,15 @@ def run(
     as_json: bool,
     quiet: bool,
 ) -> None:
-    """Run a flood against the configured target.
+    """Run an authorized traffic simulation.
 
-    Ramp-up example:  ddos run -c cfg.yaml --ramp-start 1000 --ramp-end 20000 --ramp-steps 8
+    Configuration can come from YAML, CLI flags, or both. CLI values override YAML.
+    For HTTP use --target with a full URL. For TCP/UDP/SYN use --host and --port.
+
+    Examples:
+      ddos run --host 127.0.0.1 --port 9999 --attack udp --rps 2000
+      ddos run --target http://127.0.0.1:8099/ --attack http --duration 10
+      ddos run -c config.yaml --ramp-start 500 --ramp-end 6000 --ramp-steps 6
     """
     from .config import Ramp
 
@@ -221,7 +230,11 @@ async def _ramp_controller(
 @click.option("--timeout", "-t", default=1.0, type=float, help="Per-port timeout (s)")
 @click.option("--no-data-probe", is_flag=True, help="Skip the RST-after-data check on open ports")
 def probe(host: str, ports: str, concurrency: int, timeout: float, no_data_probe: bool) -> None:
-    """TCP connect-scan a host and classify each port (open / closed / filtered)."""
+    """Scan TCP ports and classify them as open, closed, or filtered.
+
+    Open ports are data-probed by default to detect immediate RST-after-data
+    behavior commonly produced by firewalls and middleboxes.
+    """
     from .probe import format_report, scan
 
     port_list = _parse_ports(ports)
