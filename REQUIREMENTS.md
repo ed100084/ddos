@@ -111,9 +111,9 @@ Prometheus endpoint 不在本專案範圍；目前以 stdout / `--json` 作為�
 - [ ] TCP connect flood 可選 **random src port**(要 raw socket,或接受 OS 分配)
 - **AC**:同一 run 內抓 pcap(或用 dev_server 記 payload),確認有變化
 
-### R7 (P2)— `ddos probe` → config 自動串接
-- [ ] `ddos probe <host> --emit-config out.yaml`:掃完直接產一份 target yaml(open ports 填進 tcp.ports / udp target)
-- **AC**:對真目標跑,產出的 yaml 直接 `ddos run -c` 能跑
+### R7 (P2)— `ddos probe` → config 自動串接 ✅
+- [x] `ddos probe <host> --emit-config out.yaml` 產生 TCP target YAML，open ports 填入 `tcp.ports`
+- **AC**:掃描後產出的 YAML 可直接交給 `ddos run -c` 執行
 
 ### R8 — 不做
 GitHub Actions CI 不在本專案範圍；測試以本地 `.venv/bin/pytest` 為準。
