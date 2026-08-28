@@ -55,7 +55,10 @@ ddos run -c /tmp/udp.yaml          # attack: udp, target: host:port
 | `--rps` | 覆蓋 `rate.rps`(ramp 時忽略)|
 | `--ramp-start / --ramp-end` | **升速**:起始 → 結束 rps |
 | `--ramp-steps` | 升速級數(預設 5),每級顯示 ops + err% |
+| `--json` | stdout 輸出機器可讀 JSON(header/ticker 走 stderr)|
 | `-q, --quiet` | 關掉 live pps 顯示 |
+
+> 📋 **要繼續開發?** 看 [`REQUIREMENTS.md`](REQUIREMENTS.md)— 自足的需求 backlog(P0–P2)+ 架構慣例 + 目標機實測事實,給接手的人/AI 用。
 
 ```bash
 # 升速找 breaking point:500 → 6000 rps,6 級

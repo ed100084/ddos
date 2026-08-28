@@ -41,6 +41,7 @@ def main() -> None:
 @click.option("--ramp-start", "ramp_start", default=None, type=int, help="Ramp-up: starting rps")
 @click.option("--ramp-end", "ramp_end", default=None, type=int, help="Ramp-up: ending rps")
 @click.option("--ramp-steps", "ramp_steps", default=5, type=int, help="Number of ramp levels (default 5)")
+@click.option("--json", "as_json", is_flag=True, help="Emit a machine-readable JSON result instead of the human summary")
 @click.option("--quiet", "-q", is_flag=True, help="Suppress live pps output")
 def run(
     config_path: str,
@@ -49,6 +50,7 @@ def run(
     ramp_start: int | None,
     ramp_end: int | None,
     ramp_steps: int,
+    as_json: bool,
     quiet: bool,
 ) -> None:
     """Run a flood against the configured target.
@@ -109,9 +111,13 @@ def run(
     label = f"@ {cfg.rate.rps} rps" if cfg.ramp is None else (
         f"ramp {cfg.ramp.start_rps}→{cfg.ramp.end_rps} rps ({cfg.ramp.steps} steps)"
     )
-    click.echo(f"→ {cfg.attack} flood → {cfg.target} {label} × {cfg.duration_sec}s")
+    # With --json, keep stdout pure JSON: header + live ticker go to stderr.
+    click.echo(
+        f"→ {cfg.attack} flood → {cfg.target} {label} × {cfg.duration_sec}s",
+        err=as_json,
+    )
     asyncio.run(go())
-    report(engine.stats, cfg.duration_sec, ramp_steps=ramp_steps_table or None)
+    report(engine.stats, cfg.duration_sec, ramp_steps=ramp_steps_table or None, cfg=cfg, as_json=as_json)
 
 
 async def _ramp_controller(
