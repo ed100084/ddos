@@ -116,6 +116,8 @@ class Config(BaseModel):
             raise ValueError(f"{self.attack} target must be host:port (got {self.target!r})")
         if self.attack in ("udp", "tcp", "syn", "tls", "replay") and self.target.count(":") > 1:
             raise ValueError("IPv6 targets are not supported; use an IPv4 host:port")
+        if self.attack == "replay" and self.replay is None:
+            raise ValueError("replay attack requires replay.file")
         return self
 
     def effective_rps(self) -> int:
