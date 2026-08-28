@@ -35,18 +35,42 @@ def main() -> None:
 
 
 @main.command()
-@click.option("--config", "-c", "config_path", required=True, type=click.Path(exists=True), help="YAML config file")
+@click.option("--config", "-c", "config_path", required=False, type=click.Path(exists=True), help="YAML config file (optional when using CLI settings)")
+@click.option("--target", default=None, help="Target URL or host:port")
+@click.option("--host", default=None, help="Target hostname or IP (use with --port for TCP/UDP/SYN)")
+@click.option("--port", type=int, default=None, help="Target port (use with --host for TCP/UDP/SYN)")
+@click.option("--attack", type=click.Choice(["http", "udp", "tcp", "syn"]), default=None, help="Attack engine")
 @click.option("--duration", "-d", default=None, type=float, help="Override duration_sec")
 @click.option("--rps", default=None, type=int, help="Override rate.rps (ignored if ramping)")
+@click.option("--workers", default=None, type=int, help="Override worker count")
+@click.option("--udp-size", default=None, type=int, help="Override UDP payload size")
+@click.option("--udp-fill", default=None, help="Override UDP payload fill")
+@click.option("--tcp-ports", default=None, help="Override TCP ports, e.g. 80,8080")
+@click.option("--http-method", default=None, help="Override HTTP method")
+@click.option("--http-path", default=None, help="Override HTTP path")
+@click.option("--http-body", default=None, help="Override HTTP request body")
+@click.option("--syn-spoof-src", default=None, help="SYN source spoofing: random or IPv4 CIDR")
 @click.option("--ramp-start", "ramp_start", default=None, type=int, help="Ramp-up: starting rps")
 @click.option("--ramp-end", "ramp_end", default=None, type=int, help="Ramp-up: ending rps")
 @click.option("--ramp-steps", "ramp_steps", default=5, type=int, help="Number of ramp levels (default 5)")
 @click.option("--json", "as_json", is_flag=True, help="Emit a machine-readable JSON result instead of the human summary")
 @click.option("--quiet", "-q", is_flag=True, help="Suppress live pps output")
 def run(
-    config_path: str,
+    config_path: str | None,
+    target: str | None,
+    host: str | None,
+    port: int | None,
+    attack: str | None,
     duration: float | None,
     rps: int | None,
+    workers: int | None,
+    udp_size: int | None,
+    udp_fill: str | None,
+    tcp_ports: str | None,
+    http_method: str | None,
+    http_path: str | None,
+    http_body: str | None,
+    syn_spoof_src: str | None,
     ramp_start: int | None,
     ramp_end: int | None,
     ramp_steps: int,
@@ -59,11 +83,44 @@ def run(
     """
     from .config import Ramp
 
-    data = load_yaml(Path(config_path))
+    data = load_yaml(Path(config_path)) if config_path else {}
+    if target is not None:
+        data["target"] = target
+    selected_attack = attack or data.get("attack")
+    if host is not None:
+        if port is None and ":" not in host.rsplit("/", 1)[-1] and selected_attack in ("tcp", "udp", "syn"):
+            raise click.UsageError("--host for TCP/UDP/SYN must be used with --port")
+        data["target"] = f"{host}:{port}" if port is not None else host
+    elif port is not None:
+        raise click.UsageError("--port requires --host")
+    if attack is not None:
+        data["attack"] = attack
+    if not data.get("target") or not data.get("attack"):
+        raise click.UsageError("provide --config, or both --target and --attack")
     if duration is not None:
         data["duration_sec"] = duration
     if rps is not None and ramp_start is None:
         data.setdefault("rate", {})["rps"] = rps
+    if workers is not None:
+        data["workers"] = workers
+    if udp_size is not None or udp_fill is not None:
+        data.setdefault("udp", {})
+        if udp_size is not None:
+            data["udp"]["size"] = udp_size
+        if udp_fill is not None:
+            data["udp"]["fill"] = udp_fill
+    if tcp_ports is not None:
+        data.setdefault("tcp", {})["ports"] = _parse_ports(tcp_ports)
+    if any(v is not None for v in (http_method, http_path, http_body)):
+        data.setdefault("http", {})
+        if http_method is not None:
+            data["http"]["method"] = http_method
+        if http_path is not None:
+            data["http"]["path"] = http_path
+        if http_body is not None:
+            data["http"]["body"] = http_body
+    if syn_spoof_src is not None:
+        data.setdefault("syn", {})["spoof_src"] = syn_spoof_src
     # CLI ramp overrides any YAML ramp.
     if ramp_start is not None or ramp_end is not None:
         base = (data.get("rate") or {}).get("rps", 10_000)
@@ -72,7 +129,10 @@ def run(
             "end_rps": ramp_end or max(base * 4, ramp_start or base),
             "steps": ramp_steps,
         }
-    cfg = Config(**data)
+    try:
+        cfg = Config(**data)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
 
     engine = _build_engine(cfg)
     metrics = Metrics(verbose=not quiet)
@@ -162,11 +222,22 @@ def _parse_ports(spec: str) -> list[int]:
     out: set[int] = set()
     for part in spec.split(","):
         part = part.strip()
-        if "-" in part:
-            lo, hi = part.split("-", 1)
-            out.update(range(int(lo), int(hi) + 1))
-        elif part:
-            out.add(int(part))
+        try:
+            if "-" in part:
+                lo, hi = part.split("-", 1)
+                lo_i, hi_i = int(lo), int(hi)
+                if not (1 <= lo_i <= hi_i <= 65_535):
+                    raise ValueError
+                out.update(range(lo_i, hi_i + 1))
+            elif part:
+                port = int(part)
+                if not 1 <= port <= 65_535:
+                    raise ValueError
+                out.add(port)
+        except ValueError as exc:
+            raise click.BadParameter(f"invalid port specification: {part!r}") from exc
+    if not out:
+        raise click.BadParameter("at least one port is required")
     return sorted(out)
 
 

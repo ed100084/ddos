@@ -27,7 +27,7 @@ CLI (click) → Config (YAML + pydantic) → Engine (asyncio workers)
 | L7 HTTP flood | asyncio + aiohttp(完整 TLS/HTTP)| ✅ |
 | L4 UDP flood | asyncio datagram endpoint | ✅ |
 | L4 TCP connect flood | asyncio open/close,可多 port round-robin | ✅ |
-| SYN flood | scapy raw socket(需 root / `CAP_NET_RAW`)| 🚧 選裝(`pip install scapy`) |
+| SYN flood | scapy raw socket(需 root / `CAP_NET_RAW`)| 🚧 選裝(`pip install -e '.[syn]'`) |
 
 ## 快速開始
 
@@ -35,6 +35,8 @@ CLI (click) → Config (YAML + pydantic) → Engine (asyncio workers)
 # 安裝
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
+# Optional raw SYN engine (requires root/CAP_NET_RAW at runtime):
+# pip install -e ".[dev,syn]"
 
 # 起本地 target(驗證用)
 python scripts/dev_server.py --port 8099 --udp-port 9999 &
@@ -50,15 +52,27 @@ ddos run -c /tmp/udp.yaml          # attack: udp, target: host:port
 
 | Flag | 作用 |
 |---|---|
-| `-c, --config` | YAML config(必填)|
+| `-c, --config` | YAML config（可選；不用時搭配 `--target` 或 `--host`/`--port`，以及 `--attack`）|
+| `--target` / `--host` / `--port` / `--attack` | 不使用 YAML 時直接指定 target；TCP/UDP/SYN 可拆成 host + port |
 | `-d, --duration` | 覆蓋 `duration_sec` |
 | `--rps` | 覆蓋 `rate.rps`(ramp 時忽略)|
+| `--workers` / `--udp-size` / `--udp-fill` | 覆蓋 worker 與 UDP payload 設定 |
+| `--tcp-ports` | 覆蓋 TCP port 清單，例如 `80,8080` |
+| `--http-method` / `--http-path` / `--http-body` | 覆蓋 HTTP request 設定 |
+| `--syn-spoof-src` | SYN source spoofing（`random` 或 IPv4 CIDR） |
 | `--ramp-start / --ramp-end` | **升速**:起始 → 結束 rps |
 | `--ramp-steps` | 升速級數(預設 5),每級顯示 ops + err% |
 | `--json` | stdout 輸出機器可讀 JSON(header/ticker 走 stderr)|
 | `-q, --quiet` | 關掉 live pps 顯示 |
 
 > 📋 **要繼續開發?** 看 [`REQUIREMENTS.md`](REQUIREMENTS.md)— 自足的需求 backlog(P0–P2)+ 架構慣例 + 目標機實測事實,給接手的人/AI 用。
+
+不想建立 local YAML 時，可直接用 CLI（`--config` 現在是可選的）：
+
+```bash
+ddos run --host 10.0.0.5 --port 9999 --attack udp --duration 30 \
+  --rps 20000 --workers 16 --udp-size 512 --udp-fill x
+```
 
 ```bash
 # 升速找 breaking point:500 → 6000 rps,6 級
@@ -103,8 +117,10 @@ payload:
 ## Roadmap
 
 - ✅ **短期(MVP)**:CLI + YAML config + HTTP flood(asyncio/aiohttp)+ UDP flood + token bucket + live pps 顯示 + dev target server + tests。
-- **中期**:SYN flood 除錯(scapy)、payload template、Prometheus/Grafana dashboard、pcap replay(真實流量回放)。
-- **長期**:分散式 workers(Redis queue,botnet-like)、多機協調、自動報告。
+- **中期**:SYN flood 除錯(scapy)、payload template、pcap replay(真實流量回放)。
+- **長期**:自動報告與其他單機壓測能力。
+
+> Prometheus/Grafana、GitHub Actions CI 與分散式 workers 已明確排除在本專案範圍外；詳見 [`REQUIREMENTS.md`](REQUIREMENTS.md)。
 
 ## Repo 結構
 

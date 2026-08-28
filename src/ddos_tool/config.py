@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ipaddress
 from pathlib import Path
 from typing import Any, Literal
 
@@ -63,6 +64,27 @@ class TcpPayload(BaseModel):
         return v
 
 
+class SynPayload(BaseModel):
+    """SYN options; source spoofing is opt-in and requires raw-socket privileges."""
+
+    spoof_src: str | None = None
+
+    @field_validator("spoof_src")
+    @classmethod
+    def _valid_spoof_src(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        if v == "random":
+            return v
+        try:
+            network = ipaddress.ip_network(v, strict=False)
+        except ValueError as exc:
+            raise ValueError("spoof_src must be 'random' or an IPv4 CIDR") from exc
+        if network.version != 4:
+            raise ValueError("spoof_src must be 'random' or an IPv4 CIDR")
+        return v
+
+
 class Config(BaseModel):
     target: str
     attack: Literal["http", "udp", "syn", "tcp"]
@@ -73,6 +95,7 @@ class Config(BaseModel):
     http: HttpPayload | None = None
     udp: UdpPayload | None = None
     tcp: TcpPayload | None = None
+    syn: SynPayload | None = None
 
     @model_validator(mode="after")
     def _check_target(self) -> Config:

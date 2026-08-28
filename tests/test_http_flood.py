@@ -11,10 +11,11 @@ from ddos_tool.engine.http_flood import HttpFlood
 def test_http_flood_end_to_end() -> None:
     async def go():
         app = web.Application()
-        app["count"] = 0
+        count = 0
 
         async def index(request: web.Request) -> web.Response:
-            app["count"] += 1
+            nonlocal count
+            count += 1
             return web.json_response({"ok": True})
 
         app.router.add_get("/", index)
@@ -36,7 +37,7 @@ def test_http_flood_end_to_end() -> None:
             await engine.run()
         finally:
             await runner.cleanup()
-        return engine.stats, app["count"]
+        return engine.stats, count
 
     stats, server_count = asyncio.run(go())
 

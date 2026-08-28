@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 
 from ddos_tool.cli import _parse_ports
-from ddos_tool.probe import ScanReport, scan
+from ddos_tool.probe import ScanReport, _probe_port, scan
 
 
 def test_parse_ports_single() -> None:
@@ -47,3 +47,16 @@ def test_scan_localhost() -> None:
     assert len(rep.results) == 4
     statuses = {r.status for r in rep.results}
     assert statuses <= {"open", "closed", "filtered"}
+
+
+def test_probe_timeout_is_filtered(monkeypatch) -> None:
+    async def timeout(*args, **kwargs):
+        raise asyncio.TimeoutError
+
+    monkeypatch.setattr(asyncio, "open_connection", timeout)
+
+    async def go():
+        return await _probe_port("example.invalid", 443, 0.01, False, asyncio.Semaphore(1))
+
+    result = asyncio.run(go())
+    assert result.status == "filtered"

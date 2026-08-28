@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 
-from ddos_tool.config import Config, Rate, UdpPayload, load_yaml
+from ddos_tool.config import Config, Rate, SynPayload, UdpPayload, load_yaml
 
 
 def test_config_defaults() -> None:
@@ -45,6 +45,14 @@ def test_tcp_payload_port_range() -> None:
 
     with pytest.raises(ValueError):
         TcpPayload(ports=[70_000])
+
+
+def test_syn_spoof_source_is_opt_in_and_validated() -> None:
+    assert SynPayload().spoof_src is None
+    assert SynPayload(spoof_src="random").spoof_src == "random"
+    assert SynPayload(spoof_src="10.0.0.0/8").spoof_src == "10.0.0.0/8"
+    with pytest.raises(ValueError):
+        SynPayload(spoof_src="2001:db8::/32")
 
 
 def test_ramp_rates_linear() -> None:

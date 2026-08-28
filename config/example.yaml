@@ -1,6 +1,6 @@
 # ddos-tool example — points at the local dev server (scripts/dev_server.py)
 target: http://127.0.0.1:8099/
-attack: http            # http | udp | syn (syn = mid-term, needs root/CAP_NET_RAW)
+attack: http            # http | udp | tcp | syn (syn needs root/CAP_NET_RAW)
 duration_sec: 30
 rate:
   rps: 20000            # target ops/sec (token bucket)

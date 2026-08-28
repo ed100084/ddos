@@ -1,7 +1,7 @@
 # ddos-tool — Requirements & Handoff Doc
 
 > 給接手開發的 AI / engineer。這份文件**自足**:不需要讀 git log 或聊天記錄就能繼續做。
-> 最後更新:2026-08-28(對應 commit `8c2045c` + `--json`)。
+> 最後更新:2026-08-28（對應目前 `main` 的 JSON/reporting 完成版本）。
 
 ## 1. 專案定位
 
@@ -22,7 +22,7 @@ Python 的 **DDoS 模擬器 / Flood Generator** — 用來壓測自家入口(WAF
 | L7 HTTP flood(asyncio + aiohttp)| ✅ | keep-alive workers |
 | L4 UDP flood | ✅ | **已知瓶頸**:每 packet 開/關一次 datagram endpoint,高 pps 時要改成 per-worker 長存 transport(見 R6)|
 | L4 TCP connect flood | ✅ | 可多 port round-robin;SYN-ACK 就算 ok(即使對方馬上 RST)|
-| SYN flood(scapy)| 🚧 stub | lazy import,需 root / `CAP_NET_RAW`(見 R1)|
+| SYN flood(scapy)| 🚧 stub | lazy import,需 root / `CAP_NET_RAW`(見 R1); spoofing 已改為 opt-in |
 
 ### 其他能力
 
@@ -78,8 +78,8 @@ ddos/
 
 ### R1 (P0)— SYN flood engine 正式化
 `syn_flood.py` 目前是 stub(scapy lazy import、fire-and-forget)。
-- [ ] `pip install scapy` 做成 optional extra:`[project.optional-dependencies] syn = ["scapy>=2.11"]`,README 標明
-- [ ] 支援 **source IP spoofing**(可選):隨機 / CIDR range,需 root + `rp_filter=2`;config 加 `syn: { spoof_src: "10.0.0.0/8" | random }`
+- [x] `syn` optional extra 已加入；未安裝時只在執行 SYN attack 才報錯
+- [x] 支援 opt-in **source IP spoofing**（`syn: { spoof_src: "10.0.0.0/8" | random }`）；需 root + `rp_filter=2`
 - [ ] stats 區分 `sent`(SYN 發出)與 `acked`(收到 SYN-ACK,用 sniff 或 raw socket 回讀)— MVP 可先只記 sent
 - **AC**:`ddos run -c cfg.yaml --rps 2000`(attack: syn)對 dev_server 跑 10s,sent ≈ 20k ±15%;`pytest` 全綠(scapy 沒裝時 `test_syn_flood.py` 要 skip,不能 fail)
 
@@ -90,12 +90,8 @@ ddos/
 - [ ] 可選 `--max-rps` 上限防跑爆
 - **AC**:對 dev_server(本地,幾乎不會壞)跑到 max;對真目標應停在 ~5000–6000 rps 附近;JSON 有 `breaking_rps` 欄位
 
-### R3 (P1)— Prometheus metrics endpoint
-現在只有 stdout。要能接 Grafana。
-- [ ] optional extra `[metrics] = ["prometheus-client>=0.20"]`;CLI flag `--prom-port 9464`(預設關)
-- [ ] counters:`ddos_sent_total{attack,target}`、`ddos_ok_total`、`ddos_err_total`、gauge `ddos_current_rate`、`ddos_inflight`(= workers 中正在等 op 的數)
-- [ ] run 結束時 endpoint 多留 5s 再關(讓 scrape 抓到最後一筆)
-- **AC**:`curl localhost:9464/metrics` 在 run 期間有上述 metrics;不裝 prometheus-client 時 `--prom-port` 給清楚的 error
+### R3 — 不做
+Prometheus endpoint 不在本專案範圍；目前以 stdout / `--json` 作為輸出介面。
 
 ### R4 (P1)— pcap replay engine
 用真實流量回放,比合成 payload 更貼近。
@@ -119,13 +115,11 @@ ddos/
 - [ ] `ddos probe <host> --emit-config out.yaml`:掃完直接產一份 target yaml(open ports 填進 tcp.ports / udp target)
 - **AC**:對真目標跑,產出的 yaml 直接 `ddos run -c` 能跑
 
-### R8 (P2)— CI(GitHub Actions)
-- [ ] `.github/workflows/ci.yml`:matrix python 3.10/3.12 → `pip install -e ".[dev]"` → `pytest`;push + PR 觸發
-- **AC**:PR 上能看到綠勾;本地沒 scapy/prometheus 時 optional extras 不影響 CI
+### R8 — 不做
+GitHub Actions CI 不在本專案範圍；測試以本地 `.venv/bin/pytest` 為準。
 
-### R9 (P2)— 分散式 workers(botnet-like)
-- [ ] Redis queue:controller 發 op token,workers(多台)領 token 發包;`--workers remote:N`
-- **AC**:兩台機器合計 pps ≈ 單機 ×1.8(留 10% overhead)
+### R9 — 不做
+分散式／遠端 workers 不在本專案範圍；維持單機壓測模擬器定位。
 
 ## 5. 已知限制 / 誠實定位
 

@@ -45,10 +45,10 @@ async def _probe_port(
             reader, writer = await asyncio.wait_for(
                 asyncio.open_connection(host, port), timeout=timeout
             )
-        except (ConnectionRefusedError, OSError):
-            return PortResult(port, "closed")
         except (asyncio.TimeoutError, TimeoutError):
             return PortResult(port, "filtered", rtt_ms=(time.monotonic() - t0) * 1000)
+        except (ConnectionRefusedError, OSError):
+            return PortResult(port, "closed")
 
         rtt = (time.monotonic() - t0) * 1000
         result = PortResult(port, "open", rtt_ms=rtt)
