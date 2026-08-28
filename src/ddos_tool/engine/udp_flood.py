@@ -12,7 +12,8 @@ class UdpFlood(AttackEngine):
     def __init__(self, cfg: Config) -> None:
         super().__init__(cfg.effective_rps(), cfg.workers, cfg.duration_sec)
         payload = cfg.udp or UdpPayload()
-        self.payload = payload.encoded()
+        self.payload = payload.encoded() if payload.fill != "random" else None
+        self._payload_config = payload
         host, _, port_s = cfg.target.partition(":")
         self.host = host
         self.port = int(port_s or 9999)
@@ -27,7 +28,8 @@ class UdpFlood(AttackEngine):
             try:
                 while not self.stop_event.is_set():
                     await self.bucket.acquire()
-                    transport.sendto(self.payload)
+                    payload = self.payload if self.payload is not None else self._payload_config.encoded()
+                    transport.sendto(payload)
                     self.stats["ok"] += 1
                     self.stats["sent"] += 1
             except OSError:
