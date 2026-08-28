@@ -146,6 +146,8 @@ http:
 HTTP 可用 `body_template: "id={rand_int}"` 產生每 request 不同內容，並以
 `headers_random: {X-Test: [a, b]}` 隨機選 header 值；UDP 設定 `fill: random` 可產生每包不同 payload。
 
+SYN 非 spoof 模式可在 YAML 以 `syn: {ack_timeout: 0.2}` 調整 ACK 等待時間（0–5 秒）。
+
 ## Roadmap
 
 - ✅ **已完成**：HTTP、UDP、TCP connect、TLS handshake、probe、ramp、JSON 報告、payload randomization、UDP pcap replay、probe config export。

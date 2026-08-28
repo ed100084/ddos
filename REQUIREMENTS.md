@@ -31,7 +31,7 @@ Python 的 **DDoS 模擬器 / Flood Generator** — 用來壓測自家入口(WAF
 - **`ddos probe <host> -p 1-65535`**:async TCP connect scanner,分類 open / closed(RST@SYN)/ filtered(timeout)+ RST-after-data 偵測
 - **Config**:YAML + pydantic v2(`src/ddos_tool/config.py`)
 - **Metrics**:live pps ticker(stderr)+ end summary(stdout);`--json` 時 stdout 純 JSON(header/ticker 走 stderr)
-- **Tests**:42 passed, 2 skipped（未安裝 Scapy/dpkt 時），pytest，**不用 pytest-asyncio**
+- **Tests**:43 passed, 2 skipped（未安裝 Scapy/dpkt 時），pytest，**不用 pytest-asyncio**
 
 ### 目標機實測事實(2026-08-28,別重新推論)
 
@@ -78,6 +78,7 @@ ddos/
 
 ### R1 (P0)— SYN flood engine 正式化
 `syn_flood.py` 已具備受控發送、可選 spoofing 與非 spoof 模式 ACK 統計。
+- 非 spoof 模式的 `sr()` 等待時間由 `syn.ack_timeout` 控制（預設 0.2s，`0 < x ≤ 5`）；高 RTT 目標可調大，spoof 模式不受影響。
 - [x] `syn` optional extra 已加入；未安裝時只在執行 SYN attack 才報錯
 - [x] 支援 opt-in **source IP spoofing**（`syn: { spoof_src: "10.0.0.0/8" | random }`）；需 root + `rp_filter=2`
 - [x] stats 已區分 `sent` 與 `acked`；非 spoof 模式用 Scapy `sr()` 統計 SYN-ACK，spoof 模式維持 `acked=0`
@@ -131,7 +132,7 @@ GitHub Actions CI 不在本專案範圍；測試以本地 `.venv/bin/pytest` 為
 cd ddos
 python3 -m venv --without-pip .venv && curl -sSL https://bootstrap.pypa.io/get-pip.py | .venv/bin/python
 .venv/bin/pip install -e ".[dev]"
-.venv/bin/python -m pytest -q                 # 25 passed
+.venv/bin/python -m pytest -q                 # 43 passed, 2 skipped（未安裝 optional extras 時）
 .venv/bin/python scripts/dev_server.py &      # 本地 target :8099 / :9999
 .venv/bin/ddos run -c config/example.yaml --duration 3 --rps 2000
 .venv/bin/ddos probe 127.0.0.1 -p 1-100      # scanner
