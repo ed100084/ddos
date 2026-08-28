@@ -26,6 +26,27 @@ def test_config_udp_requires_host_port() -> None:
     assert cfg.attack == "udp"
 
 
+def test_config_tcp_requires_host_port() -> None:
+    with pytest.raises(ValueError):
+        Config(target="127.0.0.1", attack="tcp")
+    from ddos_tool.config import TcpPayload
+
+    cfg = Config(
+        target="127.0.0.1:80",
+        attack="tcp",
+        tcp=TcpPayload(ports=[80, 8080]),
+    )
+    assert cfg.attack == "tcp"
+    assert cfg.tcp.ports == [80, 8080]
+
+
+def test_tcp_payload_port_range() -> None:
+    from ddos_tool.config import TcpPayload
+
+    with pytest.raises(ValueError):
+        TcpPayload(ports=[70_000])
+
+
 def test_udp_payload_encoding() -> None:
     p = UdpPayload(size=10, fill="ab")
     assert len(p.encoded()) == 10

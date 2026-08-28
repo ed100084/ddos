@@ -26,6 +26,7 @@ CLI (click) → Config (YAML + pydantic) → Engine (asyncio workers)
 |---|---|---|
 | L7 HTTP flood | asyncio + aiohttp(完整 TLS/HTTP)| ✅ |
 | L4 UDP flood | asyncio datagram endpoint | ✅ |
+| L4 TCP connect flood | asyncio open/close,可多 port round-robin | ✅ |
 | SYN flood | scapy raw socket(需 root / `CAP_NET_RAW`)| 🚧 選裝(`pip install scapy`) |
 
 ## 快速開始

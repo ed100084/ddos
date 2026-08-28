@@ -34,21 +34,34 @@ class UdpPayload(BaseModel):
         return (unit * ((self.size // len(unit)) + 1))[: self.size]
 
 
+class TcpPayload(BaseModel):
+    # Optional extra ports to round-robin across; defaults to the target's port.
+    ports: list[int] = Field(default_factory=list)
+
+    @field_validator("ports")
+    @classmethod
+    def _valid_ports(cls, v: list[int]) -> list[int]:
+        if any(not (1 <= p <= 65_535) for p in v):
+            raise ValueError(f"tcp ports out of range: {v}")
+        return v
+
+
 class Config(BaseModel):
     target: str
-    attack: Literal["http", "udp", "syn"]
+    attack: Literal["http", "udp", "syn", "tcp"]
     duration_sec: float = Field(default=60.0, gt=0)
     rate: Rate = Field(default_factory=Rate)
     workers: int = Field(default=8, ge=1, le=512)
     http: HttpPayload | None = None
     udp: UdpPayload | None = None
+    tcp: TcpPayload | None = None
 
     @model_validator(mode="after")
     def _check_target(self) -> Config:
         if self.attack == "http" and not self.target.startswith(("http://", "https://")):
             raise ValueError(f"http target must be a full URL (got {self.target!r})")
-        if self.attack == "udp" and ":" not in self.target.rsplit("/", 1)[-1]:
-            raise ValueError(f"udp target must be host:port (got {self.target!r})")
+        if self.attack in ("udp", "tcp") and ":" not in self.target.rsplit("/", 1)[-1]:
+            raise ValueError(f"{self.attack} target must be host:port (got {self.target!r})")
         return self
 
 
