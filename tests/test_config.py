@@ -47,6 +47,13 @@ def test_config_syn_requires_supported_ipv4_host_port() -> None:
         Config(target="[::1]:80", attack="syn")
 
 
+def test_config_tls_requires_host_port() -> None:
+    cfg = Config(target="127.0.0.1:443", attack="tls")
+    assert cfg.attack == "tls"
+    with pytest.raises(ValueError):
+        Config(target="127.0.0.1", attack="tls")
+
+
 def test_tcp_payload_port_range() -> None:
     from ddos_tool.config import TcpPayload
 

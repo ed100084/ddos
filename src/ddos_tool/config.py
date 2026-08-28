@@ -87,7 +87,7 @@ class SynPayload(BaseModel):
 
 class Config(BaseModel):
     target: str
-    attack: Literal["http", "udp", "syn", "tcp"]
+    attack: Literal["http", "udp", "syn", "tcp", "tls"]
     duration_sec: float = Field(default=60.0, gt=0)
     rate: Rate = Field(default_factory=Rate)
     workers: int = Field(default=8, ge=1, le=512)
@@ -101,9 +101,9 @@ class Config(BaseModel):
     def _check_target(self) -> Config:
         if self.attack == "http" and not self.target.startswith(("http://", "https://")):
             raise ValueError(f"http target must be a full URL (got {self.target!r})")
-        if self.attack in ("udp", "tcp", "syn") and ":" not in self.target.rsplit("/", 1)[-1]:
+        if self.attack in ("udp", "tcp", "syn", "tls") and ":" not in self.target.rsplit("/", 1)[-1]:
             raise ValueError(f"{self.attack} target must be host:port (got {self.target!r})")
-        if self.attack in ("udp", "tcp", "syn") and self.target.count(":") > 1:
+        if self.attack in ("udp", "tcp", "syn", "tls") and self.target.count(":") > 1:
             raise ValueError("IPv6 targets are not supported; use an IPv4 host:port")
         return self
 

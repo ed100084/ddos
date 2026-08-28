@@ -53,7 +53,7 @@ ddos run -c /tmp/udp.yaml          # attack: udp, target: host:port
 | Flag | 作用 |
 |---|---|
 | `-c, --config` | YAML config（可選；不用時搭配 `--target` 或 `--host`/`--port`，以及 `--attack`）|
-| `--target` / `--host` / `--port` / `--attack` | 不使用 YAML 時直接指定 target；TCP/UDP/SYN 可拆成 host + port |
+| `--target` / `--host` / `--port` / `--attack` | 不使用 YAML 時直接指定 target；TCP/UDP/TLS/SYN 可拆成 host + port |
 | `-d, --duration` | 覆蓋 `duration_sec` |
 | `--rps` | 覆蓋 `rate.rps`(ramp 時忽略)|
 | `--workers` / `--udp-size` / `--udp-fill` | 覆蓋 worker 與 UDP payload 設定 |
@@ -72,6 +72,12 @@ ddos run -c /tmp/udp.yaml          # attack: udp, target: host:port
 ```bash
 ddos run --host 10.0.0.5 --port 9999 --attack udp --duration 30 \
   --rps 20000 --workers 16 --udp-size 512 --udp-fill x
+```
+
+TLS handshake 測試（`host:port`，完成握手後立即關閉）：
+
+```bash
+ddos run --host 127.0.0.1 --port 8443 --attack tls --rps 100 --duration 10
 ```
 
 ```bash
