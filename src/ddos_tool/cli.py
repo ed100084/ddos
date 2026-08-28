@@ -128,7 +128,7 @@ def run(
         raise click.UsageError("--syn-spoof-src is only valid with --attack syn")
     if max_packets is not None and selected_attack != "replay":
         raise click.UsageError("--max-packets is only valid with --attack replay")
-    if max_rps is not None and selected_attack != "replay" and not (ramp_start is not None or ramp_end is not None or data.get("ramp")):
+    if max_rps is not None and selected_attack != "replay" and not (find_limit or ramp_start is not None or ramp_end is not None or data.get("ramp")):
         raise click.UsageError("--max-rps is only valid with ramp or replay")
     if host is not None:
         if port is None and ":" not in host.rsplit("/", 1)[-1] and selected_attack in ("tcp", "udp", "tls", "syn"):

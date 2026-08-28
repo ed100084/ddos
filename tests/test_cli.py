@@ -42,3 +42,27 @@ def test_run_rejects_replay_only_limit_for_other_attacks() -> None:
     ])
     assert result.exit_code != 0
     assert "only valid with --attack replay" in result.output
+
+
+def test_find_limit_allows_max_rps_without_explicit_ramp(monkeypatch, tmp_path) -> None:
+    config = tmp_path / "cfg.yaml"
+    config.write_text("target: 127.0.0.1:9999\nattack: udp\nduration_sec: 1\n")
+
+    class Bucket:
+        rate = 1
+        def set_rate(self, rate):
+            self.rate = rate
+
+    class FakeEngine:
+        bucket = Bucket()
+        stats = {"sent": 0, "err": 0, "ok": 0}
+        breaking_rps = None
+        async def run(self):
+            await __import__("asyncio").sleep(0.01)
+        def stop(self):
+            pass
+
+    monkeypatch.setattr("ddos_tool.cli._build_engine", lambda cfg: FakeEngine())
+    result = CliRunner().invoke(main, ["run", "-c", str(config), "--find-limit", "--max-rps", "5000", "-d", "0.01", "-q"])
+    assert result.exit_code == 0, result.output
+    assert "UsageError" not in result.output
