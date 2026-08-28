@@ -54,6 +54,18 @@ ddos run -c /tmp/udp.yaml          # attack: udp, target: host:port
 | `--rps` | 覆蓋 `rate.rps` |
 | `-q, --quiet` | 關掉 live pps 顯示 |
 
+### `ddos probe` — port scanner(打之前先掃)
+
+```bash
+# 全 port TCP connect scan + RST-after-data 偵測
+ddos probe 222.179.105.17 -p 1-65535 -c 2000 -t 1.0
+
+# 指定 port / range
+ddos probe 10.0.0.5 -p 80,443,8000-9000
+```
+
+輸出分類:`open`(✓ holds connection = 真 service / ⚠ RST-after-data = firewall/middlebox)、`closed`(RST@SYN)、`filtered`(timeout)。
+
 ### 驗證過的 smoke test(單機)
 
 - HTTP:2000 rps × 5s → **10,500 req,100% ok**
@@ -96,8 +108,9 @@ ddos/
 │   ├── engine/udp_flood.py
 │   ├── engine/syn_flood.py
 │   ├── metrics.py        # live pps + summary
+│   ├── probe.py          # TCP connect scanner (ddos probe)
 │   └── reporter.py       # 結束 summary
-└── tests/                # config / token bucket / HTTP e2e
+└── tests/                # config / token bucket / HTTP e2e / probe
 ```
 
 ## 風險
